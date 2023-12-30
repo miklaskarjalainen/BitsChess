@@ -7,7 +7,7 @@ use crate::chessboard::board_helper::BoardHelper;
 
 fn main() {
     let mut board = ChessBoard::new();
-    println!("ChessBotty!");
+    println!("Welcome to BitChess' interface!");
     
     board.parse_fen(STARTPOS_FEN);
 
