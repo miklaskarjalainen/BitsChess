@@ -12,7 +12,6 @@ fn main() {
     board.parse_fen(STARTPOS_FEN);
 
     loop {
-
         let line = std::io::stdin().lines().next().unwrap().unwrap();
         let args: Vec<&str> = line.split(' ').collect();
 
@@ -38,7 +37,11 @@ fn main() {
 
             match args.last().expect(":^(").parse::<u32>() {
                 Ok(depth) => {
+                    let begin = std::time::Instant::now();
                     board.perft(depth, true);
+                    let duration = std::time::Instant::now() - begin;
+
+                    println!("perft took: {:?}", duration);
                 }
                 Err(_) => {
                     println!("error while parsing numerical value")
