@@ -4,7 +4,7 @@ use super::ChessBoard;
 use crate::chessboard::bitboard::{BitBoard, PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
 use crate::chessboard::board_helper::{BoardHelper, Square};
 use crate::chessboard::chessmove::{Move,MoveFlag};
-use crate::chessboard::piece::{PieceColor, PieceType};
+use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 
 impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
@@ -20,6 +20,22 @@ impl ChessBoard {
 
     pub fn get_legal_moves(&mut self) -> Vec<Move> {
         let moves = self.get_pseudo_legal_moves();
+        self.filter_legal_moves(moves)
+    }
+
+    // guaranteed to be legal
+    pub fn get_legal_captures(&mut self) -> Vec<Move> {
+        let mut moves = vec![];
+
+        let pieces = if self.turn == PieceColor::White {self.white_pieces} else {self.black_pieces};
+        for square in pieces {
+            if square == -1 {
+                continue;
+            }
+
+            let mut sqrt_moves = self.get_captures_for_square(square);
+            moves.append(&mut sqrt_moves);
+        }
         self.filter_legal_moves(moves)
     }
 
@@ -42,6 +58,56 @@ impl ChessBoard {
     pub fn get_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
         let moves = self.get_pseudo_legal_moves_for_square(square);
         self.filter_legal_moves(moves)
+    }
+
+    // not guaranteed to be legal
+    pub fn get_captures_for_square(&mut self, square: i32) -> Vec<Move> {
+        let piece = self.get_piece(square);
+        let piece_color = piece.get_color();
+
+        let friendly_pieces = self.get_side_mask(piece_color);
+        let enemy_pieces = self.get_side_mask(piece_color.flipped());
+
+        let mut generated_moves = 0;
+        match piece.get_piece_type() {
+            PieceType::Pawn => {
+                generated_moves |= PAWN_ATTACKS[piece_color as usize][square as usize]
+            }
+
+            PieceType::Knight => {
+                generated_moves = KNIGHT_ATTACKS[square as usize];
+            }
+
+            PieceType::Rook => {
+                let blockers = friendly_pieces | enemy_pieces;
+                generated_moves = BitBoard::get_rook_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+            }
+
+            PieceType::Bishop => {
+                let blockers = friendly_pieces | enemy_pieces;
+                generated_moves = BitBoard::get_bishop_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+            }
+
+            PieceType::Queen => {
+                let blockers = friendly_pieces | enemy_pieces;
+                generated_moves = BitBoard::get_queen_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+            }
+
+            PieceType::King => {
+                generated_moves = KING_ATTACKS[square as usize];
+            }
+
+            _ => { 
+                return vec![];
+            }
+        }
+
+        //
+        generated_moves &= enemy_pieces;
+
+        let mut moves = vec![];
+        self.bitboard_to_moves(generated_moves, square, piece, &mut moves);
+        moves
     }
 
     fn get_pseudo_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
@@ -173,6 +239,12 @@ impl ChessBoard {
         }
         generated_moves &= generated_moves ^ friendly_pieces;
         
+        self.bitboard_to_moves(generated_moves, square, piece, &mut moves);
+
+        moves
+    }
+
+    pub fn bitboard_to_moves(&mut self, mut generated_moves: u64, square: i32, piece: Piece, mut moves: &mut Vec<Move>) {
         let normal_add = |moves: &mut Vec<Move>, square:i32, square_to: i32| {
             moves.push(Move::new(square, square_to, MoveFlag::None));
         };
@@ -197,8 +269,6 @@ impl ChessBoard {
             // finished this bit
             generated_moves ^= 1u64 << square_to;
         }
-
-        moves
     }
 
     pub fn is_king_in_check(&self, king_color: PieceColor) -> bool {
