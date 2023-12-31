@@ -7,20 +7,20 @@ use crate::chessboard::chessmove::{Move,MoveFlag};
 use crate::chessboard::piece::{PieceColor, PieceType};
 
 impl ChessBoard {
+    fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
+        let turn = self.get_turn();
+        moves.into_iter().filter(|m| {
+            self.make_move(*m, false);
+            let is_in_check = self.is_king_in_check(turn);
+            self.unmake_move();
+            
+            !is_in_check
+        }).collect()
+    } 
+
     pub fn get_legal_moves(&mut self) -> Vec<Move> {
-        let mut moves = vec![];
-
-        let pieces = if self.turn == PieceColor::White {self.white_pieces} else {self.black_pieces};
-        for square in pieces {
-            if square == -1 {
-                continue;
-            }
-
-            let mut sqrt_moves = self.get_legal_moves_for_square(square);
-            moves.append(&mut sqrt_moves);
-        }
-        
-        moves
+        let moves = self.get_pseudo_legal_moves();
+        self.filter_legal_moves(moves)
     }
 
     pub fn get_pseudo_legal_moves(&mut self) -> Vec<Move> {
@@ -41,15 +41,7 @@ impl ChessBoard {
 
     pub fn get_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
         let moves = self.get_pseudo_legal_moves_for_square(square);
-        
-        let turn = self.get_turn();
-        moves.into_iter().filter(|m| {
-            self.make_move(*m, false);
-            let is_in_check = self.is_king_in_check(turn);
-            self.unmake_move();
-            
-            !is_in_check
-        }).collect()
+        self.filter_legal_moves(moves)
     }
 
     fn get_pseudo_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
