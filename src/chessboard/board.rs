@@ -41,6 +41,8 @@ pub struct ChessBoard {
     en_passant: i32,
     /// lines up with fen's "KQkq" -> [white_king_side, white_queen_side, black_king_side, black_queen_side]
     castling_rights: [bool; 4],  
+    half_move: u8,
+    full_move: u16,
 
     move_history: Vec<ReversibleMove>
 }
@@ -57,7 +59,9 @@ impl PartialEq for ChessBoard {
         self.turn == other.turn && 
         self.en_passant == other.en_passant && 
         self.castling_rights == other.castling_rights && 
-        self.move_history == other.move_history
+        self.move_history == other.move_history &&
+        self.half_move == other.half_move &&
+        self.full_move == other.full_move
     }
 }
 
@@ -82,10 +86,12 @@ impl std::fmt::Display for ChessBoard {
         str.push_str("   a b c d e f g h\n\n");
 
         let turn = self.get_turn();
-        str.push_str(format!("en_passant: {}\n", self.en_passant).as_str());
         str.push_str(format!("turn: {:?}\n", self.turn).as_str());
-        str.push_str(format!("castle rights: {:?}\n", self.castling_rights).as_str());
         str.push_str(format!("is in check: {}\n", self.is_king_in_check(turn)).as_str());
+        str.push_str(format!("castle rights: {:?}\n", self.castling_rights).as_str());
+        str.push_str(format!("en_passant: {}\n", self.en_passant).as_str());
+        str.push_str(format!("half move: {}\n", self.half_move).as_str());
+        str.push_str(format!("full move: {}\n", self.full_move).as_str());
 
         formatter.pad(str.as_str())
     }
@@ -100,6 +106,8 @@ impl ChessBoard {
         self.turn = PieceColor::White;
         self.move_history.clear();
         self.en_passant = -1;
+        self.full_move = 0;
+        self.half_move = 0;
     }
 
     pub fn new_game(&mut self) {
@@ -128,10 +136,12 @@ impl ChessBoard {
         
         if moving_piece.is_none() { return; }
 
-        // Handle flags
+        // Handle en passant
         let en_passant_hold = self.en_passant;
         self.en_passant = -1;
+        self.full_move += self.turn as u16; // white = 0, black = 1
         self.turn.flip();
+        
         match chess_move.get_flag() {
             MoveFlag::None => { }
             MoveFlag::EnPassant => { 
@@ -145,8 +155,9 @@ impl ChessBoard {
                 let captured = self.set_piece(to + en_passant_dir, Piece::new(0));
 
                 // Save to history
-                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights);
+                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move);
                 self.move_history.push(reversible);
+                self.half_move = 0;
                 return;
             }
             MoveFlag::PawnTwoUp => {
@@ -195,8 +206,15 @@ impl ChessBoard {
         let captured = self.set_piece(to, moving_piece);
         
         // Save to history
-        let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights);
+        let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move);
         self.move_history.push(reversible);
+
+        // Half move
+        if !captured.is_none() || moving_piece.get_piece_type() == PieceType::Pawn {
+            self.half_move = 0;
+        } else {
+            self.half_move += 1
+        }        
 
         // Disable castling rights
         match moving_piece.get_piece_type() {
@@ -281,10 +299,18 @@ impl ChessBoard {
             _ => { }
         }
 
+
         self.set_piece(move_made.board_move.get_from_idx(), moving_piece);
+
+        /* Board flags */
         self.en_passant = move_made.en_passant_square;
         self.castling_rights = move_made.castling;
+        self.half_move = move_made.half_move;
         self.turn.flip();
+        if self.turn == PieceColor::Black { 
+            self.full_move -= 1;
+        }
+
         Some(move_made.board_move)
     }
 
@@ -345,6 +371,8 @@ impl ChessBoard {
             turn: PieceColor::White,
             en_passant: -1,
             castling_rights: [true; 4],
+            half_move: 0,
+            full_move: 0,
 
             move_history: vec![]
         };
