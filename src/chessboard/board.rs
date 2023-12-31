@@ -106,7 +106,7 @@ impl ChessBoard {
         self.turn = PieceColor::White;
         self.move_history.clear();
         self.en_passant = -1;
-        self.full_move = 0;
+        self.full_move = 1;
         self.half_move = 0;
     }
 
@@ -372,7 +372,7 @@ impl ChessBoard {
             en_passant: -1,
             castling_rights: [true; 4],
             half_move: 0,
-            full_move: 0,
+            full_move: 1,
 
             move_history: vec![]
         };
