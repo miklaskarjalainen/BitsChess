@@ -20,6 +20,7 @@ pub enum PieceColor {
 }
 
 impl PieceColor {
+    #[must_use]
     fn from_u8(val: u8) -> PieceColor {
         unsafe { 
             std::mem::transmute(val & 0b1)

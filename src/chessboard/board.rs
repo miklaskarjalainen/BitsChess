@@ -16,8 +16,8 @@ pub struct ChessBoard {
     // Board representation
     // "masks" for every different type of piece
     pub bitboards: [BitBoard; 12], // 0 = white pawns, 1 = white knights ... 6 = black pawns, etc
-    side_bitboards: [BitBoard; 2],
-    board: [Piece; 64],
+    pub side_bitboards: [BitBoard; 2],
+    pub board: [Piece; 64],
 
     // Pieces with squares, -1 is none and 0 >= is the square
     white_pieces : [i32; 16], // contains every piece
@@ -37,12 +37,12 @@ pub struct ChessBoard {
     black_kings  : [i32; 1],
 
     // flags
-    turn: PieceColor,
-    en_passant: i32,
+    pub turn: PieceColor,
+    pub en_passant: i32,
     /// lines up with fen's "KQkq" -> [white_king_side, white_queen_side, black_king_side, black_queen_side]
-    castling_rights: [bool; 4],  
-    half_move: u8,
-    full_move: u16,
+    pub castling_rights: [bool; 4],  
+    pub half_move: u8,
+    pub full_move: u16,
 
     move_history: Vec<ReversibleMove>
 }
