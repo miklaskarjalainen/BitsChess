@@ -216,7 +216,8 @@ impl ChessBoard {
 
     // https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
     pub fn is_square_in_check(&self, king_color: PieceColor, square: i32) -> bool {
-        let enemy_bitboard_idx = if king_color == PieceColor::White { 6 } else { 0 };
+        const ENEMY_BITBOARD: [usize; 2] = [6, 0];
+        let enemy_bitboard_idx = ENEMY_BITBOARD[king_color as usize];
         let all_pieces = self.side_bitboards[0].get_bits() | self.side_bitboards[1].get_bits();
         
         let pawn_checks   = PAWN_ATTACKS[king_color as usize][square as usize] & self.bitboards[enemy_bitboard_idx].get_bits();
