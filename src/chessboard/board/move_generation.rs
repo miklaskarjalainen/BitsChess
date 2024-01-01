@@ -10,6 +10,7 @@ impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
         let hash = self.create_zobrist_hash();
         if let Some(reps) = self.repetitions.get(&hash) {
+            // 3-fold repetition
             if *reps >= 3u8 {
                 return vec![]; 
             }
@@ -183,56 +184,34 @@ impl ChessBoard {
                 // Castling
                 // TODO: checks, make this more compact
                 if !self.is_king_in_check(piece_color) {
-                    if piece_color == PieceColor::White {
-                        // Kings Side
-                        if self.castling_rights[0] {
-                            let rook = self.get_piece(Square::H1 as i32);
-                            if 
-                            rook.get_piece_type() == PieceType::Rook && 
-                            rook.get_color() == PieceColor::White && 
-                            self.get_piece(Square::G1 as i32).is_none() && !self.is_square_in_check(piece_color, Square::G1 as i32) &&
-                            self.get_piece(Square::F1 as i32).is_none() && !self.is_square_in_check(piece_color, Square::F1 as i32) {
-                                moves.push(Move::new(square, Square::G1 as i32, MoveFlag::Castle));
-                            }
-                        }
-    
-                        // Queen Side
-                        if self.castling_rights[1] {
-                            let rook = self.get_piece(Square::A1 as i32);
-                            if 
-                            rook.get_piece_type() == PieceType::Rook && 
-                            rook.get_color() == PieceColor::White && 
-                            self.get_piece(Square::B1 as i32).is_none() &&
-                            self.get_piece(Square::C1 as i32).is_none() && !self.is_square_in_check(piece_color, Square::C1 as i32) &&
-                            self.get_piece(Square::D1 as i32).is_none() && !self.is_square_in_check(piece_color, Square::D1 as i32) {
-                                moves.push(Move::new(square, Square::C1 as i32, MoveFlag::Castle));
-                            }
+                    const KS: [i32; 4] = [Square::H1 as i32, Square::G1 as i32, Square::F1 as i32, Square::G1 as i32];
+                    const QS: [i32; 5] = [Square::A1 as i32, Square::B1 as i32, Square::C1 as i32, Square::D1 as i32, Square::C1 as i32];
+
+                    let add_rights_black = (piece_color as usize) * 2;
+                    let square_for_black = (piece_color as i32) * 56; // A1 + 56 = A8
+
+                    // King Side
+                    if self.castling_rights[add_rights_black] {
+                        let rook = self.get_piece(KS[0] + square_for_black);
+                        if 
+                        rook.get_piece_type() == PieceType::Rook && 
+                        rook.get_color() == piece_color && 
+                        self.get_piece(KS[1] + square_for_black).is_none() && !self.is_square_in_check(piece_color, KS[1] + square_for_black) &&
+                        self.get_piece(KS[2] + square_for_black).is_none() && !self.is_square_in_check(piece_color, KS[2] + square_for_black) {
+                            moves.push(Move::new(square, KS[3] + square_for_black, MoveFlag::Castle));
                         }
                     }
-                    else {
-                        // Kings Side
-                        if self.castling_rights[2] {
-                            let rook = self.get_piece(Square::H8 as i32);
-                            if 
-                            rook.get_piece_type() == PieceType::Rook && 
-                            rook.get_color() == PieceColor::Black && 
-                            self.get_piece(Square::G8 as i32).is_none() && !self.is_square_in_check(piece_color, Square::G8 as i32) &&
-                            self.get_piece(Square::F8 as i32).is_none() && !self.is_square_in_check(piece_color, Square::F8 as i32) {
-                                moves.push(Move::new(square, Square::G8 as i32, MoveFlag::Castle));
-                            }
-                        }
-    
-                        // Queen Side
-                        if self.castling_rights[3] {
-                            let rook = self.get_piece(Square::A8 as i32);
-                            if 
-                            rook.get_piece_type() == PieceType::Rook && 
-                            rook.get_color() == PieceColor::Black && 
-                            self.get_piece(Square::B8 as i32).is_none() &&
-                            self.get_piece(Square::C8 as i32).is_none() && !self.is_square_in_check(piece_color, Square::C8 as i32) &&
-                            self.get_piece(Square::D8 as i32).is_none() && !self.is_square_in_check(piece_color, Square::D8 as i32) {
-                                moves.push(Move::new(square, Square::C8 as i32, MoveFlag::Castle));
-                            }
+
+                    // Queen Side
+                    if self.castling_rights[add_rights_black + 1] {
+                        let rook = self.get_piece(QS[0] + square_for_black);
+                        if 
+                        rook.get_piece_type() == PieceType::Rook && 
+                        rook.get_color() == piece_color && 
+                        self.get_piece(QS[1] + square_for_black).is_none() &&
+                        self.get_piece(QS[2] + square_for_black).is_none() && !self.is_square_in_check(piece_color, QS[2] + square_for_black) &&
+                        self.get_piece(QS[3] + square_for_black).is_none() && !self.is_square_in_check(piece_color, QS[3] + square_for_black) {
+                            moves.push(Move::new(square, QS[4] + square_for_black, MoveFlag::Castle));
                         }
                     }
                 }
