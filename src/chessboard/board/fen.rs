@@ -77,6 +77,17 @@ impl ChessBoard {
             }
         }
         
+        // 
+        if self.is_king_in_check(self.get_turn().flipped()) {
+            if !self.is_king_in_check(self.get_turn()) {
+                println!("FEN: parsing error, turn is {:?}, but {:?} is in CHECK.", self.get_turn(), self.get_turn().flipped());
+                self.turn.flip();
+                println!("FEN: forced the turn to be {:?}", self.turn);
+            }
+            else {
+                println!("FEN: parsing error, both sides are in CHECK. Will cause undefined behaviour");
+            }
+        }
     }
 
     pub fn to_fen(&self) -> String {
