@@ -3,6 +3,8 @@ pub mod move_generation;
 pub mod perft;
 pub mod zobrist;
 
+use std::collections::HashMap;
+
 use super::bitboard::BitBoard;
 use super::board_helper::BoardHelper;
 use super::chessmove::ReversibleMove;
@@ -45,6 +47,7 @@ pub struct ChessBoard {
     pub half_move: u8,
     pub full_move: u16,
 
+    repetitions: HashMap<u64, u8>,
     move_history: Vec<ReversibleMove>
 }
 
@@ -94,6 +97,12 @@ impl std::fmt::Display for ChessBoard {
         str.push_str(format!("half move: {}\n", self.half_move).as_str());
         str.push_str(format!("full move: {}\n", self.full_move).as_str());
         str.push_str(format!("zobrist: {}\n", self.create_zobrist_hash()).as_str());
+        str.push_str(format!("repetitions: {:?}\n", self.repetitions).as_str());
+        str.push('[');
+        for m in &self.move_history {
+            str.push_str(format!("'{}', ", &m.board_move.to_uci()).as_str());
+        }
+        str.push(']');
 
         formatter.pad(str.as_str())
     }
@@ -107,6 +116,7 @@ impl ChessBoard {
         
         self.turn = PieceColor::White;
         self.move_history.clear();
+        self.repetitions.clear();
         self.en_passant = -1;
         self.full_move = 1;
         self.half_move = 0;
@@ -160,6 +170,11 @@ impl ChessBoard {
                 let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move);
                 self.move_history.push(reversible);
                 self.half_move = 0;
+                
+                let hash = self.create_zobrist_hash();
+                self.repetitions.entry(hash)
+                    .and_modify(|h| *h += 1)
+                    .or_insert(1);
                 return;
             }
             MoveFlag::PawnTwoUp => {
@@ -251,10 +266,20 @@ impl ChessBoard {
 
             _ => {}
         }
+
+        let hash = self.create_zobrist_hash();
+        self.repetitions.entry(hash)
+            .and_modify(|h| *h += 1)
+            .or_insert(1);
     }
 
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() { return None; }
+
+        let hash = self.create_zobrist_hash();
+        self.repetitions.entry(hash)
+            .and_modify(|h| *h -= 1);
+
         let move_made = self.move_history.pop().unwrap();
 
         // Undo capture
@@ -376,6 +401,7 @@ impl ChessBoard {
             half_move: 0,
             full_move: 1,
 
+            repetitions: HashMap::new(),
             move_history: vec![]
         };
         x.new_game();

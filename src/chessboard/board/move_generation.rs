@@ -8,6 +8,13 @@ use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 
 impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
+        let hash = self.create_zobrist_hash();
+        if let Some(reps) = self.repetitions.get(&hash) {
+            if *reps >= 3u8 {
+                return vec![]; 
+            }
+        }
+
         let turn = self.get_turn();
         moves.into_iter().filter(|m| {
             self.make_move(*m, false);

@@ -88,6 +88,9 @@ impl ChessBoard {
                 println!("FEN: parsing error, both sides are in CHECK. Will cause undefined behaviour");
             }
         }
+
+        let hash = self.create_zobrist_hash();
+        self.repetitions.insert(hash, 1);
     }
 
     pub fn to_fen(&self) -> String {
