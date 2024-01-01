@@ -1,6 +1,7 @@
 pub mod fen;
 pub mod move_generation;
 pub mod perft;
+pub mod zobrist;
 
 use super::bitboard::BitBoard;
 use super::board_helper::BoardHelper;
@@ -92,6 +93,7 @@ impl std::fmt::Display for ChessBoard {
         str.push_str(format!("en_passant: {}\n", self.en_passant).as_str());
         str.push_str(format!("half move: {}\n", self.half_move).as_str());
         str.push_str(format!("full move: {}\n", self.full_move).as_str());
+        str.push_str(format!("zobrist: {}\n", self.create_zobrist_hash()).as_str());
 
         formatter.pad(str.as_str())
     }
