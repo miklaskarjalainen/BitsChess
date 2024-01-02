@@ -25,8 +25,6 @@ impl Square {
 impl BoardHelper {
     // "a1" -> 0, "B2" -> 9
     pub fn text_to_square(uci_cmd: &str) -> i32 {
-        // Draws all the possible moves from a given position
-        println!("{}" , uci_cmd);
         let file = Self::file_to_idx(uci_cmd.chars().nth(0).unwrap());
         let rank = uci_cmd.chars().nth(1).unwrap().to_digit(10).unwrap() as i32 - 1;
         let target_idx = rank * CHESSBOARD_WIDTH + file;
