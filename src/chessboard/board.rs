@@ -174,11 +174,12 @@ impl ChessBoard {
                 let captured = self.set_piece(to + en_passant_dir, Piece::new(0));
 
                 // Save to history
-                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move, self.zobrist_hash, is_in_search);
+                let save_repetition = !is_in_search || self.repetitions.contains_key(&self.zobrist_hash);
+                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move, self.zobrist_hash, save_repetition);
                 self.move_history.push(reversible);
                 self.half_move = 0;
                 
-                if !is_in_search {
+                if save_repetition {
                     self.repetitions.entry(self.zobrist_hash)
                         .and_modify(|h| *h += 1)
                         .or_insert(1);
@@ -298,10 +299,11 @@ impl ChessBoard {
         }
 
         // Save to history
-        let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, castling_hold, half_move_hold, zobrist_hold, is_in_search);
+        let save_repetition = !is_in_search || self.repetitions.contains_key(&self.zobrist_hash);
+        let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, castling_hold, half_move_hold, zobrist_hold, save_repetition);
         self.move_history.push(reversible);
 
-        if !is_in_search {
+        if save_repetition {
             self.repetitions.entry(self.zobrist_hash)
                 .and_modify(|h| *h += 1)
                 .or_insert(1);
@@ -328,7 +330,7 @@ impl ChessBoard {
         if self.move_history.is_empty() { return None; }
         
         let move_made = self.move_history.pop().unwrap();
-        if !move_made.was_in_search {
+        if move_made.repetition_saved {
             self.repetitions.entry(self.zobrist_hash)
                 .and_modify(|r| *r -= 1);
         }
