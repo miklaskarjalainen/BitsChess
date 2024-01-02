@@ -8,8 +8,7 @@ use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 
 impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
-        let hash = self.create_zobrist_hash();
-        if let Some(reps) = self.repetitions.get(&hash) {
+        if let Some(reps) = self.repetitions.get(&self.zobrist_hash) {
             // 3-fold repetition
             if *reps >= 3u8 {
                 return vec![]; 
@@ -18,7 +17,7 @@ impl ChessBoard {
 
         let turn = self.get_turn();
         moves.into_iter().filter(|m| {
-            self.make_move(*m, false);
+            self.make_move(*m, true);
             let is_in_check = self.is_king_in_check(turn);
             self.unmake_move();
             

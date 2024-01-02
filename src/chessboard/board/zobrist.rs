@@ -5,9 +5,9 @@ use super::{Piece, PieceColor, ChessBoard, BoardHelper};
 use lazy_static::lazy_static;
 
 const ZOBRIST_SEED: u64 = 212832809410876;
-const ZOBRIST_SIDE_IDX: usize = 64*12;
-const ZOBRIST_CASTLING: usize = ZOBRIST_SIDE_IDX + 1; // + 4
-const ZOBRIST_EN_PASSANT: usize = ZOBRIST_CASTLING + 5; // + 8 (1 for every file)
+pub const ZOBRIST_TURN: usize = 64*12;
+pub const ZOBRIST_CASTLING: usize = ZOBRIST_TURN + 1; // + 4
+pub const ZOBRIST_EN_PASSANT: usize = ZOBRIST_CASTLING + 5; // + 8 (1 for every file)
 
 lazy_static! {
     pub static ref ZOBRIST_KEYS: [u64; 12*64 + 1 + 4 + 8] = {
@@ -24,6 +24,7 @@ impl Piece {
 }
 
 impl ChessBoard {
+    /// Creates a completely new zobrist_hash (independent from the member variable)
     pub fn create_zobrist_hash(&self) -> u64 {
         let mut hash = 0u64;
         
@@ -40,6 +41,10 @@ impl ChessBoard {
             if self.castling_rights[i] {
                 hash ^= ZOBRIST_KEYS[ZOBRIST_CASTLING + i];
             }
+        }
+
+        if self.get_turn() == PieceColor::Black {
+            hash ^= ZOBRIST_KEYS[ZOBRIST_TURN];
         }
         
         // en passant, not needed for 3-fold repetition. 
@@ -59,6 +64,7 @@ impl ChessBoard {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::fen::STARTPOS_FEN;
 
     #[test]
     fn test_verify_zobrist_keys() {
@@ -69,5 +75,39 @@ mod tests {
                 assert_ne!(ZOBRIST_KEYS[x], ZOBRIST_KEYS[y], "ZOBRIST_KEY contains 2 identical keys at {} and {}. Use a different SEED!", x ,y);
             }
         }
+    }
+
+    #[test]
+    fn test_make_move_zobrist_updation_basic() {
+        let mut board = ChessBoard::new();
+        board.parse_fen(STARTPOS_FEN);
+        board.make_move_uci("e2e4");
+        board.make_move_uci("e7e5");
+        assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
+    }
+
+    #[test]
+    fn test_make_move_zobrist_updation_castling() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        board.make_move_uci("e1g1");
+        board.make_move_uci("e8c8");
+        assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
+    
+        board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        board.make_move_uci("e8g8");
+        board.make_move_uci("e1b1");
+        assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
+    }
+
+    #[test]
+    fn test_make_undo_move_zobrist_updation_basic() {
+        let mut board = ChessBoard::new();
+        board.parse_fen(STARTPOS_FEN);
+        board.make_move_uci("e2e4");
+        board.make_move_uci("e7e5");
+        board.unmake_move();
+        board.unmake_move();
+        assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     }
 }

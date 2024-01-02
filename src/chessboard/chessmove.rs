@@ -127,19 +127,23 @@ pub struct ReversibleMove {
     pub captured: Piece,
 
     // board states
+    pub zobrist_hash: u64,
     pub en_passant_square: i32,
     pub castling: [bool; 4],
     pub half_move: u8,
+    pub was_in_search: bool,
 }
 
 impl ReversibleMove {
-    pub fn new(board_move: Move, captured: Piece, en_passant: i32, castling: [bool; 4], half_move: u8) -> Self { 
+    pub fn new(board_move: Move, captured: Piece, en_passant: i32, castling: [bool; 4], half_move: u8, zobrist_hash: u64, was_in_search: bool) -> Self { 
         Self {
             board_move: board_move, 
             captured: captured,
             en_passant_square: en_passant,
             castling: castling,
-            half_move: half_move
+            half_move: half_move,
+            zobrist_hash: zobrist_hash,
+            was_in_search: was_in_search
         }
     }
 }

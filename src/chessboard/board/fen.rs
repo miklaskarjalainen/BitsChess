@@ -91,6 +91,7 @@ impl ChessBoard {
 
         let hash = self.create_zobrist_hash();
         self.repetitions.insert(hash, 1);
+        self.zobrist_hash = hash;
     }
 
     pub fn to_fen(&self) -> String {

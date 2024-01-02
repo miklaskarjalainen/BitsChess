@@ -46,6 +46,7 @@ pub struct ChessBoard {
     pub castling_rights: [bool; 4],  
     pub half_move: u8,
     pub full_move: u16,
+    pub zobrist_hash: u64,
 
     repetitions: HashMap<u64, u8>,
     move_history: Vec<ReversibleMove>
@@ -96,7 +97,7 @@ impl std::fmt::Display for ChessBoard {
         str.push_str(format!("en_passant: {}\n", self.en_passant).as_str());
         str.push_str(format!("half move: {}\n", self.half_move).as_str());
         str.push_str(format!("full move: {}\n", self.full_move).as_str());
-        str.push_str(format!("zobrist: {}\n", self.create_zobrist_hash()).as_str());
+        str.push_str(format!("zobrist: {}\n", self.zobrist_hash).as_str());
         str.push_str(format!("repetitions: {:?}\n", self.repetitions).as_str());
         str.push('[');
         for m in &self.move_history {
@@ -120,6 +121,7 @@ impl ChessBoard {
         self.en_passant = -1;
         self.full_move = 1;
         self.half_move = 0;
+        self.zobrist_hash = 0;
     }
 
     pub fn new_game(&mut self) {
@@ -150,9 +152,14 @@ impl ChessBoard {
 
         // Handle en passant
         let en_passant_hold = self.en_passant;
+        let zobrist_hold = self.zobrist_hash;
+        let castling_hold = self.castling_rights;
+        let half_move_hold = self.half_move;
+
         self.en_passant = -1;
         self.full_move += self.turn as u16; // white = 0, black = 1
         self.turn.flip();
+        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_TURN];
         
         match chess_move.get_flag() {
             MoveFlag::None => { }
@@ -167,14 +174,15 @@ impl ChessBoard {
                 let captured = self.set_piece(to + en_passant_dir, Piece::new(0));
 
                 // Save to history
-                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move);
+                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move, self.zobrist_hash, is_in_search);
                 self.move_history.push(reversible);
                 self.half_move = 0;
                 
-                let hash = self.create_zobrist_hash();
-                self.repetitions.entry(hash)
-                    .and_modify(|h| *h += 1)
-                    .or_insert(1);
+                if !is_in_search {
+                    self.repetitions.entry(self.zobrist_hash)
+                        .and_modify(|h| *h += 1)
+                        .or_insert(1);
+                }
                 return;
             }
             MoveFlag::PawnTwoUp => {
@@ -221,10 +229,6 @@ impl ChessBoard {
         // Move & Capture
         self.set_piece(from, Piece::new(0));
         let captured = self.set_piece(to, moving_piece);
-        
-        // Save to history
-        let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move);
-        self.move_history.push(reversible);
 
         // Half move
         if !captured.is_none() || moving_piece.get_piece_type() == PieceType::Pawn {
@@ -237,28 +241,54 @@ impl ChessBoard {
         match moving_piece.get_piece_type() {
             PieceType::King => {
                 if moving_piece.get_color() == PieceColor::White {
-                    self.castling_rights[0] = false;
-                    self.castling_rights[1] = false;
+                    if self.castling_rights[0] {
+                        self.castling_rights[0] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+0];
+                    }
+                    
+                    if self.castling_rights[1] {
+                        self.castling_rights[1] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+1];
+                    }
                 }
                 else {
-                    self.castling_rights[2] = false;
-                    self.castling_rights[3] = false;
+                    if self.castling_rights[2] {
+                        self.castling_rights[2] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+2];
+                    }
+                    
+                    if self.castling_rights[3] {
+                        self.castling_rights[3] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+3];
+                    }
                 }
             }
 
             PieceType::Rook => {
                 match Square::from_u32(from as u32) {
                     Square::H1 => {
-                        self.castling_rights[0] = false;
+                        if self.castling_rights[0] {
+                            self.castling_rights[0] = false;
+                            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+0];
+                        }
                     }
                     Square::A1 => {
-                        self.castling_rights[1] = false;
+                        if self.castling_rights[1] {
+                            self.castling_rights[1] = false;
+                            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+1];
+                        }
                     }
                     Square::H8 => {
-                        self.castling_rights[2] = false;
+                        if self.castling_rights[2] {
+                            self.castling_rights[2] = false;
+                            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+2];
+                        }
                     }
                     Square::A8 => {
-                        self.castling_rights[3] = false;
+                        if self.castling_rights[3] {
+                            self.castling_rights[3] = false;
+                            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+3];
+                        };
                     }
                     _ => {}
                 }
@@ -267,20 +297,25 @@ impl ChessBoard {
             _ => {}
         }
 
-        let hash = self.create_zobrist_hash();
-        self.repetitions.entry(hash)
-            .and_modify(|h| *h += 1)
-            .or_insert(1);
+        // Save to history
+        let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, castling_hold, half_move_hold, zobrist_hold, is_in_search);
+        self.move_history.push(reversible);
+
+        if !is_in_search {
+            self.repetitions.entry(self.zobrist_hash)
+                .and_modify(|h| *h += 1)
+                .or_insert(1);
+        }
     }
 
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() { return None; }
-
-        let hash = self.create_zobrist_hash();
-        self.repetitions.entry(hash)
-            .and_modify(|h| *h -= 1);
-
+        
         let move_made = self.move_history.pop().unwrap();
+        if !move_made.was_in_search {
+            self.repetitions.entry(self.zobrist_hash)
+                .and_modify(|r| *r -= 1);
+        }
 
         // Undo capture
         let mut moving_piece = self.set_piece(move_made.board_move.get_to_idx(), move_made.captured);
@@ -326,7 +361,6 @@ impl ChessBoard {
             _ => { }
         }
 
-
         self.set_piece(move_made.board_move.get_from_idx(), moving_piece);
 
         /* Board flags */
@@ -334,6 +368,7 @@ impl ChessBoard {
         self.castling_rights = move_made.castling;
         self.half_move = move_made.half_move;
         self.turn.flip();
+        self.zobrist_hash = move_made.zobrist_hash;
         if self.turn == PieceColor::Black { 
             self.full_move -= 1;
         }
@@ -400,6 +435,7 @@ impl ChessBoard {
             castling_rights: [true; 4],
             half_move: 0,
             full_move: 1,
+            zobrist_hash: 0,
 
             repetitions: HashMap::new(),
             move_history: vec![]
@@ -411,9 +447,10 @@ impl ChessBoard {
     fn remove_from_bitboards(&mut self, piece: Piece, square: i32) {
         assert!(!piece.is_none());
 
-        // Bitboard
+        // Bitboard & Zobrist
         self.bitboards[piece.get_piece_index()].clear_bit(square);
         self.side_bitboards[piece.get_color() as usize].clear_bit(square);
+        self.zobrist_hash ^= piece.get_hash(square);
         
         // Piece Arrays
         for e in self.get_array_for_piece(piece) {
@@ -442,6 +479,7 @@ impl ChessBoard {
         // Bitboard
         self.bitboards[piece.get_piece_index()].set_bit(square);
         self.side_bitboards[piece.get_color() as usize].set_bit(square);
+        self.zobrist_hash ^= piece.get_hash(square);
 
         // Piece arrays
         let array = self.get_array_for_piece(piece);
