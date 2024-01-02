@@ -308,6 +308,22 @@ impl ChessBoard {
         }
     }
 
+    // Not able to move not counted here.
+    pub fn is_draw(&self) -> bool {
+        // 50 move rule
+        if self.half_move == 100 {
+            return true;
+        }
+
+        if let Some(reps) = self.repetitions.get(&self.zobrist_hash) {
+            // 3-fold repetition
+            if *reps >= 3u8 {
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() { return None; }
         

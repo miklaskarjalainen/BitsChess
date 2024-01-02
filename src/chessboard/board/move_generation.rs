@@ -8,13 +8,6 @@ use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 
 impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
-        if let Some(reps) = self.repetitions.get(&self.zobrist_hash) {
-            // 3-fold repetition
-            if *reps >= 3u8 {
-                return vec![]; 
-            }
-        }
-
         let turn = self.get_turn();
         moves.into_iter().filter(|m| {
             self.make_move(*m, true);
@@ -26,12 +19,16 @@ impl ChessBoard {
     } 
 
     pub fn get_legal_moves(&mut self) -> Vec<Move> {
+        if self.is_draw() { return vec![]; }
+
         let moves = self.get_pseudo_legal_moves();
         self.filter_legal_moves(moves)
     }
 
     // guaranteed to be legal
     pub fn get_legal_captures(&mut self) -> Vec<Move> {
+        if self.is_draw() { return vec![]; }
+
         let mut moves = vec![];
 
         let pieces = if self.turn == PieceColor::White {self.white_pieces} else {self.black_pieces};
@@ -63,6 +60,8 @@ impl ChessBoard {
     }
 
     pub fn get_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
+        if self.is_draw() { return vec![]; }
+
         let moves = self.get_pseudo_legal_moves_for_square(square);
         self.filter_legal_moves(moves)
     }
