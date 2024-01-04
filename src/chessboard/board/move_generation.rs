@@ -5,6 +5,7 @@ use crate::chessboard::bitboard::{BitBoard, PAWN_ATTACKS, KING_ATTACKS, KNIGHT_A
 use crate::chessboard::board_helper::{BoardHelper, Square};
 use crate::chessboard::chessmove::{Move,MoveFlag};
 use crate::chessboard::piece::{Piece, PieceColor, PieceType};
+use super::magics::{get_bishop_magic, get_rook_magic};
 
 impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
@@ -165,17 +166,17 @@ impl ChessBoard {
 
             PieceType::Rook => {
                 let blockers = self.get_side_mask(piece_color.flipped()) | friendly_pieces;
-                generated_moves = BitBoard::get_rook_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+                generated_moves = get_rook_magic(square, blockers);
             }
 
             PieceType::Bishop => {
                 let blockers = self.get_side_mask(piece_color.flipped()) | friendly_pieces;
-                generated_moves = BitBoard::get_bishop_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+                generated_moves = get_bishop_magic(square, blockers);
             }
 
             PieceType::Queen => {
                 let blockers = self.get_side_mask(piece_color.flipped()) | friendly_pieces;
-                generated_moves = BitBoard::get_queen_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+                generated_moves = get_rook_magic(square, blockers) | get_bishop_magic(square, blockers);
             }
 
             PieceType::King => {
@@ -270,8 +271,8 @@ impl ChessBoard {
         let knight_checks = KNIGHT_ATTACKS[square as usize] & self.bitboards[enemy_bitboard_idx+1].get_bits();
         let king_checks = KING_ATTACKS[square as usize] & self.bitboards[enemy_bitboard_idx+5].get_bits();
 
-        let bishop_checks = BitBoard::get_bishop_attack_mask(square, all_pieces).get_bits() & (self.bitboards[enemy_bitboard_idx+2].get_bits() | self.bitboards[enemy_bitboard_idx+4].get_bits());
-        let rook_checks = BitBoard::get_rook_attack_mask(square, all_pieces).get_bits() & (self.bitboards[enemy_bitboard_idx+3].get_bits() | self.bitboards[enemy_bitboard_idx+4].get_bits());
+        let bishop_checks = get_bishop_magic(square, all_pieces) & (self.bitboards[enemy_bitboard_idx+2].get_bits() | self.bitboards[enemy_bitboard_idx+4].get_bits());
+        let rook_checks   = get_rook_magic(square, all_pieces) & (self.bitboards[enemy_bitboard_idx+3].get_bits() | self.bitboards[enemy_bitboard_idx+4].get_bits());
 
         (pawn_checks | knight_checks | bishop_checks | rook_checks | king_checks) != 0
     }

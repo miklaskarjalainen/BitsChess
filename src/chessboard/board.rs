@@ -1,4 +1,5 @@
 pub mod fen;
+pub mod magics;
 pub mod move_generation;
 pub mod perft;
 pub mod zobrist;

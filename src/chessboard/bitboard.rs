@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 
-//https://www.chessprogramming.org/Bitboard_Board-Definition
+use super::board::magics::{get_bishop_magic, get_rook_magic};
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BitBoard(u64);
 
@@ -17,7 +18,6 @@ pub const NOT_H_FILE: u64 = !H_FILE;
 pub const NOT_HG_FILE: u64 = !HG_FILE;
 
 use super::piece::PieceColor;
-
 
 lazy_static! {
     pub static ref PAWN_ATTACKS: [[u64; 64]; 2] = {
@@ -264,13 +264,6 @@ impl BitBoard {
             if ((1 << (tr * 8 + f)) & blockers) != 0 { break; }
         }
         BitBoard(attacks)
-    }
-
-    pub fn get_queen_attack_mask(square: i32, blockers: u64) -> BitBoard {
-        let bishop = Self::get_bishop_attack_mask(square, blockers);
-        let rook = Self::get_rook_attack_mask(square, blockers);
-        
-        BitBoard(bishop.get_bits() | rook.get_bits())
     }
 }
 
