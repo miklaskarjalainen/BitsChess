@@ -59,8 +59,8 @@ lazy_static!{
         mask
     };
 
-    pub static ref BISHOP_ATTACK_MAP: Vec<[u64; 4096]> = {
-        let mut map = vec![[0u64; 4096]; 64];
+    pub static ref BISHOP_ATTACK_MAP: Vec<[u64; 512]> = {
+        let mut map = vec![[0u64; 512]; 64];
 
         for square in 0..64 {
             let mask = bishop_mask(square);
