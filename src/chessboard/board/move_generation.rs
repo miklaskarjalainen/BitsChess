@@ -87,17 +87,17 @@ impl ChessBoard {
 
             PieceType::Rook => {
                 let blockers = friendly_pieces | enemy_pieces;
-                generated_moves = BitBoard::get_rook_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+                generated_moves = get_rook_magic(square, blockers);
             }
 
             PieceType::Bishop => {
                 let blockers = friendly_pieces | enemy_pieces;
-                generated_moves = BitBoard::get_bishop_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+                generated_moves = get_bishop_magic(square, blockers);
             }
 
             PieceType::Queen => {
                 let blockers = friendly_pieces | enemy_pieces;
-                generated_moves = BitBoard::get_queen_attack_mask(square, BitBoard::new(blockers).get_bits()).get_bits();
+                generated_moves = get_rook_magic(square, blockers) | get_bishop_magic(square, blockers);
             }
 
             PieceType::King => {
