@@ -72,6 +72,21 @@ impl BoardHelper {
         return INDEX64[(((bb ^ (bb-1)).wrapping_mul(DEBRUIJN64)) >> 58) as usize];
     }
 
+    pub fn pop_rsb(bb: &mut u64) -> i32 {
+        let pos = Self::bitscan_forward(*bb);
+        *bb &= *bb - 1;
+        pos
+    }
+
+    pub fn count_bits(mut b: u64) -> i32 {
+        let mut count = 0;
+        while b != 0 {
+            count += 1;
+            Self::pop_rsb(&mut b);
+        }
+        count
+    }
+
     /// e2e4 e7e8q
     pub fn is_valid_uci_move(uci_move: &str) -> bool {
         if uci_move.len() != 4 && uci_move.len() != 5 {
