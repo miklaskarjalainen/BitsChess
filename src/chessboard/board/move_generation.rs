@@ -117,7 +117,7 @@ impl ChessBoard {
         moves
     }
 
-    fn get_pseudo_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
+    pub fn get_pseudo_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
         let piece = self.get_piece(square);
         let piece_color = piece.get_color();
         let mut moves = vec![];
