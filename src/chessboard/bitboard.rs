@@ -1,7 +1,5 @@
 use lazy_static::lazy_static;
 
-use super::board::magics::{get_bishop_magic, get_rook_magic};
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BitBoard(u64);
 

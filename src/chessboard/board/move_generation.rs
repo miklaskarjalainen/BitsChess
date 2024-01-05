@@ -5,7 +5,7 @@ use crate::chessboard::bitboard::{BitBoard, PAWN_ATTACKS, KING_ATTACKS, KNIGHT_A
 use crate::chessboard::board_helper::{BoardHelper, Square};
 use crate::chessboard::chessmove::{Move,MoveFlag};
 use crate::chessboard::piece::{Piece, PieceColor, PieceType};
-use super::magics::{get_bishop_magic, get_rook_magic};
+use crate::chessboard::board::magics::{get_bishop_magic, get_rook_magic};
 
 impl ChessBoard {
     fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
