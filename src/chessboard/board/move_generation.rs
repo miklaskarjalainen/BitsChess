@@ -44,7 +44,7 @@ impl ChessBoard {
         self.filter_legal_moves(moves)
     }
 
-    pub fn get_pseudo_legal_moves(&mut self) -> Vec<Move> {
+    pub fn get_pseudo_legal_moves(&self) -> Vec<Move> {
         let mut moves = vec![];
 
         let pieces = if self.turn == PieceColor::White {self.white_pieces} else {self.black_pieces};
@@ -68,7 +68,7 @@ impl ChessBoard {
     }
 
     // not guaranteed to be legal
-    pub fn get_captures_for_square(&mut self, square: i32) -> Vec<Move> {
+    pub fn get_captures_for_square(&self, square: i32) -> Vec<Move> {
         let piece = self.get_piece(square);
         let piece_color = piece.get_color();
 
@@ -117,7 +117,7 @@ impl ChessBoard {
         moves
     }
 
-    pub fn get_pseudo_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
+    pub fn get_pseudo_legal_moves_for_square(&self, square: i32) -> Vec<Move> {
         let piece = self.get_piece(square);
         let piece_color = piece.get_color();
         let mut moves = vec![];
@@ -229,7 +229,7 @@ impl ChessBoard {
         moves
     }
 
-    pub fn bitboard_to_moves(&mut self, mut generated_moves: u64, square: i32, piece: Piece, mut moves: &mut Vec<Move>) {
+    pub fn bitboard_to_moves(&self, mut generated_moves: u64, square: i32, piece: Piece, mut moves: &mut Vec<Move>) {
         let normal_add = |moves: &mut Vec<Move>, square:i32, square_to: i32| {
             moves.push(Move::new(square, square_to, MoveFlag::None));
         };
