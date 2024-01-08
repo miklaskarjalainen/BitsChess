@@ -6,12 +6,12 @@ pub mod zobrist;
 
 use std::collections::HashMap;
 
+use move_generation::MoveGenerator;
 use super::bitboard::BitBoard;
 use super::board_helper::BoardHelper;
-use super::chessmove::ReversibleMove;
+use super::chessmove::{Move, MoveFlag, ReversibleMove};
 use super::piece::{Piece, PieceType, PieceColor};
 use super::board_helper::Square;
-use super::chessmove::{Move, MoveFlag};
 
 pub const CHESSBOARD_WIDTH: i32 = 8;
 
@@ -23,22 +23,14 @@ pub struct ChessBoard {
     pub side_bitboards: [BitBoard; 2],
     pub board: [Piece; 64],
 
-    // Pieces with squares, -1 is none and 0 >= is the square
-    white_pieces : [i32; 16], // contains every piece
-    white_pawns  : [i32; 8],
-    white_knights: [i32; 10],
-    white_bishops: [i32; 10],
-    white_rooks  : [i32; 10],
-    white_queens : [i32; 9],
-    white_kings  : [i32; 1],
-    
-    black_pieces : [i32; 16], // contains every piece
-    black_pawns  : [i32; 8],
-    black_knights: [i32; 10],
-    black_bishops: [i32; 10],
-    black_rooks  : [i32; 10],
-    black_queens : [i32; 9],
-    black_kings  : [i32; 1],
+    // contains every piece
+    pieces : [[i32; 16]; 2], 
+    pawns  : [[i32; 8]; 2], 
+    knights: [[i32; 10]; 2], 
+    bishops: [[i32; 10]; 2], 
+    rooks  : [[i32; 10]; 2], 
+    queens : [[i32; 9]; 2], 
+    kings  : [[i32; 1]; 2], 
 
     // flags
     pub turn: PieceColor,
@@ -50,7 +42,7 @@ pub struct ChessBoard {
     pub zobrist_hash: u64,
 
     repetitions: HashMap<u64, u8>,
-    move_history: Vec<ReversibleMove>
+    move_history: Vec<ReversibleMove>,
 }
 
 impl PartialEq for ChessBoard {
@@ -142,6 +134,13 @@ impl ChessBoard {
         self.make_move(m, false);
         
         Some(())
+    }
+
+    pub fn get_legal_moves(&self) -> Vec<Move> { 
+        MoveGenerator::get_legal_moves(self)
+    }
+    pub fn get_legal_moves_for_square(&self, square: i32) -> Vec<Move> { 
+        MoveGenerator::get_legal_moves_for_square(self, square)
     }
 
     pub fn make_move(&mut self, chess_move: Move, is_in_search: bool) {
@@ -396,11 +395,11 @@ impl ChessBoard {
     }
 
     pub fn get_pieces_for(&self, color: PieceColor) -> &[i32] {
-        return if color == PieceColor::White { &self.white_pieces } else { &self.black_pieces }
+        return &self.pieces[color as usize];
     }
 
     pub fn get_pieces_for_mut(&mut self, color: PieceColor) -> &mut [i32] {
-        return if color == PieceColor::White { &mut self.white_pieces } else { &mut self.black_pieces }
+        return &mut self.pieces[color as usize];
     }
 
     // returns the piece that was on the square before
@@ -433,21 +432,13 @@ impl ChessBoard {
             bitboards: [BitBoard::new(0); 12],
             side_bitboards: [BitBoard::new(0); 2],
 
-            white_pieces : [-1; 16],
-            white_pawns  : [-1; 8],
-            white_knights: [-1; 10],
-            white_bishops: [-1; 10],
-            white_rooks  : [-1; 10],
-            white_queens : [-1; 9],
-            white_kings  : [-1; 1],
-            
-            black_pieces : [-1; 16],
-            black_pawns  : [-1; 8],
-            black_knights: [-1; 10],
-            black_bishops: [-1; 10],
-            black_rooks  : [-1; 10],
-            black_queens : [-1; 9],
-            black_kings  : [-1; 1],
+            pieces : [[-1; 16]; 2],
+            pawns  : [[-1; 8]; 2],
+            knights: [[-1; 10]; 2],
+            bishops: [[-1; 10]; 2],
+            rooks  : [[-1; 10]; 2],
+            queens : [[-1; 9]; 2],
+            kings  : [[-1; 1]; 2],
 
             turn: PieceColor::White,
             en_passant: -1,
@@ -457,7 +448,7 @@ impl ChessBoard {
             zobrist_hash: 0,
 
             repetitions: HashMap::new(),
-            move_history: vec![]
+            move_history: vec![],
         };
         x.new_game();
         x
@@ -521,24 +512,25 @@ impl ChessBoard {
     }
 
     pub fn get_array_for_piece(&mut self, piece: Piece) -> &mut [i32] {
+        let color_idx = piece.get_color() as usize;
         match piece.get_piece_type() {
             PieceType::Pawn => {
-                if piece.is_white() { &mut self.white_pawns } else { &mut self.black_pawns }
+                return &mut self.pawns[color_idx];
             }
             PieceType::Knight => {
-                if piece.is_white() { &mut self.white_knights } else { &mut self.black_knights }
+                return &mut self.knights[color_idx];
             }
             PieceType::Bishop => {
-                if piece.is_white() { &mut self.white_bishops } else { &mut self.black_bishops}
+                return &mut self.bishops[color_idx];
             }
             PieceType::Rook => {
-                if piece.is_white() { &mut self.white_rooks } else { &mut self.black_rooks }
+                return &mut self.rooks[color_idx];
             }
             PieceType::Queen => {
-                if piece.is_white() { &mut self.white_queens } else { &mut self.black_queens }
+                return &mut self.queens[color_idx];
             }
             PieceType::King => {
-                if piece.is_white() { &mut self.white_kings } else { &mut self.black_kings }
+                return &mut self.kings[color_idx];
             }
             _ => { panic!("{:?}", piece); }
         }

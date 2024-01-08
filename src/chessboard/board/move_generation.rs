@@ -1,6 +1,7 @@
 
 use super::ChessBoard;
 
+
 use crate::chessboard::bitboard::{BitBoard, PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
 use crate::chessboard::board_helper::{BoardHelper, Square};
 use crate::chessboard::chessmove::{Move,MoveFlag};
@@ -8,256 +9,8 @@ use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 use crate::chessboard::board::magics::{get_bishop_magic, get_rook_magic};
 
 impl ChessBoard {
-    fn filter_legal_moves(&mut self, moves: Vec<Move>) -> Vec<Move> {
-        let turn = self.get_turn();
-        moves.into_iter().filter(|m| {
-            self.make_move(*m, true);
-            let is_in_check = self.is_king_in_check(turn);
-            self.unmake_move();
-            
-            !is_in_check
-        }).collect()
-    } 
-
-    pub fn get_legal_moves(&mut self) -> Vec<Move> {
-        if self.is_draw() { return vec![]; }
-
-        let moves = self.get_pseudo_legal_moves();
-        self.filter_legal_moves(moves)
-    }
-
-    // guaranteed to be legal
-    pub fn get_legal_captures(&mut self) -> Vec<Move> {
-        if self.is_draw() { return vec![]; }
-
-        let mut moves = vec![];
-
-        let pieces = if self.turn == PieceColor::White {self.white_pieces} else {self.black_pieces};
-        for square in pieces {
-            if square == -1 {
-                continue;
-            }
-
-            let mut sqrt_moves = self.get_captures_for_square(square);
-            moves.append(&mut sqrt_moves);
-        }
-        self.filter_legal_moves(moves)
-    }
-
-    pub fn get_pseudo_legal_moves(&self) -> Vec<Move> {
-        let mut moves = vec![];
-
-        let pieces = if self.turn == PieceColor::White {self.white_pieces} else {self.black_pieces};
-        for square in pieces {
-            if square == -1 {
-                continue;
-            }
-
-            let mut sqrt_moves = self.get_pseudo_legal_moves_for_square(square);
-            moves.append(&mut sqrt_moves);
-        }
-        
-        moves
-    }
-
-    pub fn get_legal_moves_for_square(&mut self, square: i32) -> Vec<Move> {
-        if self.is_draw() { return vec![]; }
-
-        let moves = self.get_pseudo_legal_moves_for_square(square);
-        self.filter_legal_moves(moves)
-    }
-
-    // not guaranteed to be legal
-    pub fn get_captures_for_square(&self, square: i32) -> Vec<Move> {
-        let piece = self.get_piece(square);
-        let piece_color = piece.get_color();
-
-        let friendly_pieces = self.get_side_mask(piece_color);
-        let enemy_pieces = self.get_side_mask(piece_color.flipped());
-
-        let mut generated_moves = 0;
-        match piece.get_piece_type() {
-            PieceType::Pawn => {
-                generated_moves |= PAWN_ATTACKS[piece_color as usize][square as usize]
-            }
-
-            PieceType::Knight => {
-                generated_moves = KNIGHT_ATTACKS[square as usize];
-            }
-
-            PieceType::Rook => {
-                let blockers = friendly_pieces | enemy_pieces;
-                generated_moves = get_rook_magic(square, blockers);
-            }
-
-            PieceType::Bishop => {
-                let blockers = friendly_pieces | enemy_pieces;
-                generated_moves = get_bishop_magic(square, blockers);
-            }
-
-            PieceType::Queen => {
-                let blockers = friendly_pieces | enemy_pieces;
-                generated_moves = get_rook_magic(square, blockers) | get_bishop_magic(square, blockers);
-            }
-
-            PieceType::King => {
-                generated_moves = KING_ATTACKS[square as usize];
-            }
-
-            _ => { 
-                return vec![];
-            }
-        }
-
-        //
-        generated_moves &= enemy_pieces;
-
-        let mut moves = vec![];
-        self.bitboard_to_moves(generated_moves, square, piece, &mut moves);
-        moves
-    }
-
-    pub fn get_pseudo_legal_moves_for_square(&self, square: i32) -> Vec<Move> {
-        let piece = self.get_piece(square);
-        let piece_color = piece.get_color();
-        let mut moves = vec![];
-        if self.turn != piece_color {
-            return moves;
-        }
-
-        let mut generated_moves = 0;
-        let friendly_pieces = self.get_side_mask(piece_color);
-        
-        match piece.get_piece_type() {
-            PieceType::Pawn => {
-                let enemies = self.get_side_mask(piece_color.flipped());
-                let blockers = enemies | friendly_pieces;
-
-                let atk_dir = if piece.is_white() { 8 } else { -8 };
-                let start_rank = if piece.is_white() { 1 } else { 6 };
-
-                // Advance by 1
-                if (blockers & (1 << (square + atk_dir))) == 0 {
-                    generated_moves |= 1 << (square + atk_dir);
-
-                    // Advance by 2
-                    if BoardHelper::get_rank(square) == start_rank && ((blockers & (1 << (square + atk_dir * 2))) == 0) {
-                        moves.push(Move::new(square, square + atk_dir* 2, MoveFlag::PawnTwoUp));
-                    }
-                }
-
-                // En Passant
-                let attack_mask = PAWN_ATTACKS[piece_color as usize][square as usize];
-                if self.en_passant != -1 {
-                    // check if the attack pattern overlaps the en passant square
-                    let en_passant_square_mask = 0b1u64 << self.en_passant;
-                    if attack_mask & en_passant_square_mask != 0 {
-                        moves.push(Move::new(square, self.en_passant, MoveFlag::EnPassant));
-                    }
-                }
-                
-                // Capturing
-                generated_moves |= attack_mask & enemies;
-            }
-
-            PieceType::Knight => {
-                generated_moves = KNIGHT_ATTACKS[square as usize];
-            }
-
-            PieceType::Rook => {
-                let blockers = self.get_side_mask(piece_color.flipped()) | friendly_pieces;
-                generated_moves = get_rook_magic(square, blockers);
-            }
-
-            PieceType::Bishop => {
-                let blockers = self.get_side_mask(piece_color.flipped()) | friendly_pieces;
-                generated_moves = get_bishop_magic(square, blockers);
-            }
-
-            PieceType::Queen => {
-                let blockers = self.get_side_mask(piece_color.flipped()) | friendly_pieces;
-                generated_moves = get_rook_magic(square, blockers) | get_bishop_magic(square, blockers);
-            }
-
-            PieceType::King => {
-                // Castling
-                // TODO: checks, make this more compact
-                if !self.is_king_in_check(piece_color) {
-                    const KS: [i32; 4] = [Square::H1 as i32, Square::G1 as i32, Square::F1 as i32, Square::G1 as i32];
-                    const QS: [i32; 5] = [Square::A1 as i32, Square::B1 as i32, Square::C1 as i32, Square::D1 as i32, Square::C1 as i32];
-
-                    let add_rights_black = (piece_color as usize) * 2;
-                    let square_for_black = (piece_color as i32) * 56; // A1 + 56 = A8
-
-                    // King Side
-                    if self.castling_rights[add_rights_black] {
-                        let rook = self.get_piece(KS[0] + square_for_black);
-                        if 
-                        rook.get_piece_type() == PieceType::Rook && 
-                        rook.get_color() == piece_color && 
-                        self.get_piece(KS[1] + square_for_black).is_none() && !self.is_square_in_check(piece_color, KS[1] + square_for_black) &&
-                        self.get_piece(KS[2] + square_for_black).is_none() && !self.is_square_in_check(piece_color, KS[2] + square_for_black) {
-                            moves.push(Move::new(square, KS[3] + square_for_black, MoveFlag::Castle));
-                        }
-                    }
-
-                    // Queen Side
-                    if self.castling_rights[add_rights_black + 1] {
-                        let rook = self.get_piece(QS[0] + square_for_black);
-                        if 
-                        rook.get_piece_type() == PieceType::Rook && 
-                        rook.get_color() == piece_color && 
-                        self.get_piece(QS[1] + square_for_black).is_none() &&
-                        self.get_piece(QS[2] + square_for_black).is_none() && !self.is_square_in_check(piece_color, QS[2] + square_for_black) &&
-                        self.get_piece(QS[3] + square_for_black).is_none() && !self.is_square_in_check(piece_color, QS[3] + square_for_black) {
-                            moves.push(Move::new(square, QS[4] + square_for_black, MoveFlag::Castle));
-                        }
-                    }
-                }
-
-                generated_moves = KING_ATTACKS[square as usize];
-            }
-
-            _ => {
-                return vec![];
-            }
-        }
-        generated_moves &= generated_moves ^ friendly_pieces;
-        
-        self.bitboard_to_moves(generated_moves, square, piece, &mut moves);
-
-        moves
-    }
-
-    pub fn bitboard_to_moves(&self, mut generated_moves: u64, square: i32, piece: Piece, mut moves: &mut Vec<Move>) {
-        let normal_add = |moves: &mut Vec<Move>, square:i32, square_to: i32| {
-            moves.push(Move::new(square, square_to, MoveFlag::None));
-        };
-        // accounts promotions
-        let pawn_add = |moves: &mut Vec<Move>, square:i32, square_to: i32| {
-            let rank = BoardHelper::get_rank(square_to);
-            if rank == 0 || rank == 7 {
-                moves.push(Move::new(square, square_to, MoveFlag::PromoteQueen));
-                moves.push(Move::new(square, square_to, MoveFlag::PromoteRook));
-                moves.push(Move::new(square, square_to, MoveFlag::PromoteBishop));
-                moves.push(Move::new(square, square_to, MoveFlag::PromoteKnight));
-            } else {
-                moves.push(Move::new(square, square_to, MoveFlag::None));
-            }
-        };
-
-        let push_function = if piece.get_piece_type() != PieceType::Pawn { normal_add } else { pawn_add };
-        while generated_moves != 0 {
-            let square_to = BoardHelper::bitscan_forward(generated_moves);
-            push_function(&mut moves, square, square_to);
-            
-            // finished this bit
-            generated_moves ^= 1u64 << square_to;
-        }
-    }
-
     pub fn is_king_in_check(&self, king_color: PieceColor) -> bool {
-        let king_square = if king_color == PieceColor::White { self.white_kings[0] } else { self.black_kings[0] };
+        let king_square = self.kings[king_color as usize][0];
         self.is_square_in_check(king_color, king_square)
     }
 
@@ -277,3 +30,463 @@ impl ChessBoard {
         (pawn_checks | knight_checks | bishop_checks | rook_checks | king_checks) != 0
     }
 }
+
+pub struct MoveGenerator;
+
+impl MoveGenerator {
+    pub fn generate_moves(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
+        while move_mask != 0 {
+            let square_to = BoardHelper::bitscan_forward(move_mask);
+            out_moves.push(Move::new(from, square_to, MoveFlag::None));
+            move_mask ^= 1u64 << square_to;
+        }
+    }
+
+    pub fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
+        while move_mask != 0 {
+            let square_to = BoardHelper::bitscan_forward(move_mask);
+            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteKnight));
+            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteBishop));
+            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteRook));
+            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteQueen));
+            move_mask ^= 1u64 << square_to;
+        }
+    }
+
+    pub fn get_legal_moves(board: &ChessBoard) -> Vec<Move> {
+        use crate::chessboard::bitboard;
+        let color_idx = board.turn as usize;
+        let enemy_bitboard_idx = board.turn.flipped() as usize;
+
+        // 
+        let attack_mask = Self::get_attack_mask(board);
+
+        let friendly_pieces = board.side_bitboards[color_idx].get_bits();
+        let enemy_pieces = board.side_bitboards[enemy_bitboard_idx].get_bits();
+        let all_pieces = friendly_pieces | enemy_pieces;
+        let enemy_or_empty = (!0u64) ^ friendly_pieces;
+
+        let (pin_hv, pin_d12) = Self::get_pinned_mask(board);
+        let pin_mask = pin_hv | pin_d12;
+        let mut moves = Vec::<Move>::with_capacity(32);
+        let mut check_mask = !0u64;
+
+        // King 
+        let king_square = board.kings[color_idx][0];
+        let king_moves = KING_ATTACKS[king_square as usize] & !attack_mask & !friendly_pieces;
+        Self::generate_moves(king_square, king_moves, &mut moves);
+
+        let king_attacked_mask = attack_mask & (1u64 << king_square);
+        if king_attacked_mask != 0 {            
+            let double_check;
+            (double_check, check_mask) = Self::get_check_mask(board);
+
+            // In double check, only king is allowed to move.
+            if double_check {
+                return moves;
+            }
+        }
+        else {
+            // Castling
+            let rights_idx = (color_idx) * 2;
+            let rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)].get_bits();
+            let square_for_black = (color_idx as i32) * 56;
+
+            // King Side
+            if board.castling_rights[rights_idx] {
+                const ROOK_LOCATION_MASK: [u64; 2] = [1u64 << (Square::H1 as u64), 1u64 << (Square::H8 as u64)];
+                const EMPTY_SQUARES: [u64; 2] = [0b1100000, 0b1100000 << 7*8];
+
+                let are_empty = all_pieces & EMPTY_SQUARES[color_idx] == 0;
+                let are_attacked = attack_mask & EMPTY_SQUARES[color_idx] != 0;
+                let rook_in_place = rooks & ROOK_LOCATION_MASK[color_idx] != 0;
+                if are_empty && !are_attacked && rook_in_place {
+                    moves.push(Move::new((Square::E1 as i32) + square_for_black, (Square::G1 as i32) + square_for_black, MoveFlag::Castle));
+                }
+            }
+
+            // Queen Side
+            if board.castling_rights[rights_idx+1] {
+                const ROOK_LOCATION_MASK: [u64; 2] = [1u64 << (Square::A1 as u64), 1u64 << (Square::A8 as u64)];
+                const EMPTY_SQUARES: [u64; 2] = [0b1110, 0b1110 << 7*8];
+                const NON_ATTACKED_MASK: [u64; 2] = [0b1100, 0b1100 << 7*8];
+
+                let are_empty = all_pieces & EMPTY_SQUARES[color_idx] == 0;
+                let are_attacked = attack_mask & NON_ATTACKED_MASK[color_idx] != 0;
+                let rook_in_place = rooks & ROOK_LOCATION_MASK[color_idx] != 0;
+                if are_empty && !are_attacked && rook_in_place {
+                    moves.push(Move::new((Square::E1 as i32) + square_for_black, (Square::C1 as i32) + square_for_black, MoveFlag::Castle));
+                }
+            }
+        }
+
+        // Knights
+        for knight_square in board.knights[color_idx] {
+            if knight_square == -1 { continue; }
+            // Pinned knight cannot move
+            if pin_mask & (1 << knight_square) != 0 { continue; } 
+            
+            let knight_attacks = bitboard::KNIGHT_ATTACKS[knight_square as usize] & enemy_or_empty & check_mask;
+            Self::generate_moves(knight_square, knight_attacks, &mut moves);
+        }
+        
+        // Bishop
+        for bishop_square in board.bishops[color_idx] {
+            if bishop_square == -1 { continue; }
+
+            let bishop_attacks = get_bishop_magic(bishop_square, all_pieces) & enemy_or_empty & check_mask;
+            if pin_mask & (1 << bishop_square) != 0 {
+                // For Bishops the pin cannot be by horizontal/vertical moving piece for it be able to move  
+                if pin_hv & (1 << bishop_square) == 0 {
+                    Self::generate_moves(bishop_square, bishop_attacks & pin_d12, &mut moves);
+                }
+                continue;
+            }
+            Self::generate_moves(bishop_square, bishop_attacks, &mut moves);
+        }
+
+        // Rook
+        for rook_square in board.rooks[color_idx] {
+            if rook_square == -1 { continue; }
+
+            let rook_attacks = get_rook_magic(rook_square, all_pieces) & enemy_or_empty & check_mask;
+            if pin_mask & (1 << rook_square) != 0 {
+                // For rooks the pin cannot be by diagonal moving piece for it be able to move  
+                if pin_d12 & (1 << rook_square) == 0 {
+                    Self::generate_moves(rook_square, rook_attacks & pin_hv, &mut moves);
+                }
+                continue;
+            }
+            Self::generate_moves(rook_square, rook_attacks, &mut moves);
+        }
+
+        // Queen
+        for queen_square in board.queens[color_idx] {
+            if queen_square == -1 { continue; }
+
+            if pin_mask & (1 << queen_square) != 0 {
+                let bishop = get_bishop_magic(queen_square, all_pieces) & !friendly_pieces & check_mask & pin_d12;
+                let rook = get_rook_magic(queen_square, all_pieces) & !friendly_pieces & check_mask & pin_hv;
+                Self::generate_moves(queen_square, bishop | rook, &mut moves);
+                continue;
+            }
+
+            let queen_attacks = (get_rook_magic(queen_square, all_pieces) | get_bishop_magic(queen_square, all_pieces)) & !friendly_pieces & check_mask;
+            Self::generate_moves(queen_square, queen_attacks, &mut moves);
+        }
+
+        // Pawns
+        for pawn_square in board.pawns[color_idx] {
+            if pawn_square == -1 { continue; } 
+
+            let mut promotable_moves = 0u64;
+            let current_rank = BoardHelper::get_rank(pawn_square);
+            
+            
+            // Attack
+            if pin_mask & (1 << pawn_square) != 0 {
+                promotable_moves |= PAWN_ATTACKS[color_idx][pawn_square as usize] & enemy_pieces & check_mask & pin_d12;
+            } else {
+                promotable_moves |= PAWN_ATTACKS[color_idx][pawn_square as usize] & enemy_pieces & check_mask;
+            }
+
+            // Advance by 1
+            let move_dir = if board.turn == PieceColor::White{ 8 } else { -8 };
+            let move_mask = 1u64 << (pawn_square + move_dir);
+            let pin_allowed_to_move = (pin_mask & (1 << pawn_square) == 0) || (move_mask & pin_hv) != 0;
+            if (all_pieces & move_mask) == 0 && pin_allowed_to_move {
+                promotable_moves |= (1u64 << (pawn_square + move_dir)) & check_mask;
+
+                // Advance by 2
+                // FIXME: only on a different if, because '1u64 << (pawn_square + move_dir*2)' would overflow
+                let on_start_rank = if board.turn == PieceColor::White { 1 } else { 6 } == current_rank;
+                if on_start_rank {
+                    let advance_mask = 1u64 << (pawn_square + move_dir*2);
+                    let not_blocked = all_pieces & advance_mask == 0;
+                    if on_start_rank && not_blocked && (advance_mask & check_mask) != 0 {
+                        moves.push(Move::new(pawn_square, pawn_square + move_dir * 2, MoveFlag::PawnTwoUp));
+                    }
+                }
+            }
+            
+
+            // Push promotable_moves
+            let promotion_rank = if board.turn == PieceColor::White{ 6 } else { 1 };
+            if promotion_rank == current_rank {
+                Self::generate_moves_promotion(pawn_square, promotable_moves, &mut moves);
+            }
+            else {
+                Self::generate_moves(pawn_square, promotable_moves, &mut moves);
+            }
+
+            // En Passant
+            if board.en_passant != -1 && (pin_mask & (1 << pawn_square) == 0) {
+                // check if the attack pattern overlaps the en passant square
+                let en_passant_square_mask = 0b1u64 << board.en_passant;
+
+                // If the pawn which moved 2 up is part of the pinned mask
+                let pawn_moved_mask = if color_idx == 0 {en_passant_square_mask >> 8} else {en_passant_square_mask << 8};
+                let pawn_moved_pinned = pawn_moved_mask & pin_mask != 0; 
+                let this_pawn = PAWN_ATTACKS[color_idx][pawn_square as usize] & en_passant_square_mask != 0;
+
+                if !pawn_moved_pinned && this_pawn && (check_mask & pawn_moved_mask == pawn_moved_mask) {
+                    if BoardHelper::get_rank(pawn_square) == BoardHelper::get_rank(king_square) {
+                        // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1 DOESN'T WORK
+                        let opp_rq = board.bitboards[PieceType::Rook.get_side_index(board.turn.flipped())].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn.flipped())].get_bits();
+                        
+                        let two_pawn_mask = pawn_moved_mask | (1 << pawn_square);
+                        let blockers = all_pieces ^ two_pawn_mask;
+                        let rook_attacks = get_rook_magic(king_square, blockers);
+
+                        if rook_attacks & opp_rq == 0 {
+                            moves.push(Move::new(pawn_square, board.en_passant, MoveFlag::EnPassant));
+                        }
+                    }
+                    else {
+                        moves.push(Move::new(pawn_square, board.en_passant, MoveFlag::EnPassant));
+                    }
+                }
+            }
+        }
+
+        moves
+    }
+
+    pub fn get_legal_moves_for_square(board: &ChessBoard, square: i32) -> Vec<Move> {
+        Self::get_legal_moves(board).into_iter().filter(|m| {
+            m.get_from_idx() == square
+        }).collect()
+    }
+
+    /// (HorizontalVertical, Diagonal)
+    pub fn get_pinned_mask(board: &ChessBoard) -> (u64, u64) {
+        let opponent = board.get_turn().flipped();
+        let current_turn = board.get_turn();
+
+        let opp_bq = board.bitboards[PieceType::Bishop.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+        let opp_rq = board.bitboards[PieceType::Rook  .get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+        let king_square = board.kings[current_turn as usize][0];
+
+        let occupied = board.side_bitboards[0].get_bits() | board.side_bitboards[1].get_bits();
+        let own_pieces = board.side_bitboards[current_turn as usize].get_bits();
+        
+        let (mut rook_pins, mut bishop_pins) = (0u64, 0u64);
+
+        // Bishop
+        let mut pinner_bq = Self::xray_bishop_attacks(occupied, own_pieces, king_square) & opp_bq;
+        while pinner_bq != 0 {
+            use super::super::bitboard::BETWEENS;
+
+            let square = BoardHelper::bitscan_forward(pinner_bq);
+            bishop_pins |= BETWEENS[square as usize][king_square as usize] | (1 << square);
+            pinner_bq &= pinner_bq - 1;
+        }
+
+        // Rook
+        let mut pinner_rq = Self::xray_rook_attacks(occupied, own_pieces, king_square) & opp_rq;
+        while pinner_rq != 0 {
+            use super::super::bitboard::BETWEENS;
+
+            let square = BoardHelper::bitscan_forward(pinner_rq);
+            rook_pins |= BETWEENS[square as usize][king_square as usize] | (1 << square);
+            pinner_rq &= pinner_rq - 1;
+        }
+
+        (rook_pins, bishop_pins)
+    }
+
+    // (double_check, check_mask)
+    pub fn get_check_mask(board: &ChessBoard) -> (bool, u64) {
+        let opponent = board.get_turn().flipped() as usize;
+        let side_king = board.get_turn() as usize;
+        
+        let king_mask = board.bitboards[side_king * 6 + 5].get_bits();
+        let king_square = board.kings[side_king][0];
+        let blockers = board.side_bitboards[0].get_bits() | board.side_bitboards[1].get_bits(); 
+
+        let mut check_mask = 0u64;
+
+        let mut is_checked = false;
+        let mut is_double_check = false;
+
+        // Pawns
+        for pawn_square in board.pawns[opponent] {
+            if pawn_square == -1 { continue; }
+
+            let attack = PAWN_ATTACKS[opponent][pawn_square as usize];
+            if (attack & king_mask) != 0 {
+                check_mask |= 1 << pawn_square;
+                is_double_check = is_checked;
+                is_checked = true;
+            }
+        }
+
+        // Knights
+        for knight_square in board.knights[opponent] {
+            if knight_square == -1 { continue; }
+
+            let attack = KNIGHT_ATTACKS[knight_square as usize];
+            if (attack & king_mask) != 0 {
+                check_mask |= 1 << knight_square;
+                is_double_check = is_checked;
+                is_checked = true;
+            }
+        }
+
+        // Bishop
+        for bishop_square in board.bishops[opponent] {
+            if bishop_square == -1 { continue; }
+
+            let attack = get_bishop_magic(bishop_square, blockers);
+            if (attack & king_mask) != 0 {
+                check_mask |= attack & get_bishop_magic(king_square, blockers);
+                check_mask |= 1 << bishop_square;
+                is_double_check = is_checked;
+                is_checked = true;
+            }
+        }
+
+        // Rooks
+        for rook_square in board.rooks[opponent] {
+            if rook_square == -1 { continue; }
+
+            let attack = get_rook_magic(rook_square, blockers);
+            if (attack & king_mask) != 0 {
+                check_mask |= attack & get_rook_magic(king_square, blockers);
+                check_mask |= 1 << rook_square;
+                is_double_check = is_checked;
+                is_checked = true;
+            }
+        }
+
+        // Queens
+        for queen_square in board.queens[opponent] {
+            if queen_square == -1 { continue; }
+
+            {
+                let rook_attack = get_rook_magic(queen_square, blockers);
+                if (rook_attack & king_mask) != 0 {
+                    check_mask |= rook_attack & get_rook_magic(king_square, blockers);
+                    check_mask |= 1 << queen_square;
+                    is_double_check = is_checked;
+                    is_checked = true;
+                    continue;
+                }
+            }
+
+            {
+                let bishop_attack = get_bishop_magic(queen_square, blockers);
+                if (bishop_attack & king_mask) != 0 {
+                    check_mask |= bishop_attack & get_bishop_magic(king_square, blockers);
+                    check_mask |= 1 << queen_square;
+                    is_double_check = is_checked;
+                    is_checked = true;
+                    continue;
+                }
+            }
+        }
+        
+        (is_double_check, check_mask)
+    }
+    
+    pub fn get_attack_mask(board: &ChessBoard) -> u64 {
+        use crate::chessboard::bitboard;
+        let king_mask = board.bitboards[board.get_turn() as usize * 6 + 5].get_bits();
+        let enemy_color = board.get_turn().flipped() as usize;
+        // erase king from blockers as well
+        let all_pieces = (board.side_bitboards[0].get_bits() | board.side_bitboards[1].get_bits()) ^ king_mask;
+    
+        let mut attacks = 0u64;
+
+        for pawn_square in board.pawns[enemy_color] {
+            if pawn_square == -1 { continue; }
+            attacks |= bitboard::PAWN_ATTACKS[enemy_color][pawn_square as usize];
+        }
+
+        for knight_square in board.knights[enemy_color] {
+            if knight_square == -1 { continue; }
+            attacks |= bitboard::KNIGHT_ATTACKS[knight_square as usize];
+        }
+
+        for bishop_square in board.bishops[enemy_color] {
+            if bishop_square == -1 { continue; }
+            attacks |= get_bishop_magic(bishop_square, all_pieces);
+        }
+
+        for rook_square in board.rooks[enemy_color] {
+            if rook_square == -1 { continue; }
+            attacks |= get_rook_magic(rook_square, all_pieces);
+        }
+
+        for queen_square in board.queens[enemy_color] {
+            if queen_square == -1 { continue; }
+            attacks |= get_bishop_magic(queen_square, all_pieces);
+            attacks |= get_rook_magic(queen_square, all_pieces);
+        }
+
+        for king_square in board.kings[enemy_color] {
+            attacks |= KING_ATTACKS[king_square as usize];
+        }
+
+        attacks
+    }
+
+    // https://www.chessprogramming.org/X-ray_Attacks_(Bitboards)#ModifyingOccupancy
+    fn xray_rook_attacks(occupied: u64, mut blockers: u64, rook_square: i32) -> u64 {
+        let attacks = get_rook_magic(rook_square, blockers);
+        blockers &= attacks;
+        return attacks ^ get_rook_magic(rook_square, occupied ^ blockers);
+    }
+
+    fn xray_bishop_attacks(occupied: u64, mut blockers: u64, bishop_square: i32) -> u64 {
+        let attacks = get_bishop_magic(bishop_square, blockers);
+        blockers &= attacks;
+        return attacks ^ get_bishop_magic(bishop_square, occupied ^ blockers);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    #[should_panic]
+    fn test_chess_board_move_generation_en_passant_pin() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("qk6/8/8/3pP3/8/5K2/8/8 w - d6 0 1");
+        board.make_move_uci("e5d6").unwrap(); 
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_chess_board_move_generation_en_passant_capture_reveal() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("8/8/8/1kqpP1K1/8/8/8/8 w - d6 0 1");
+        board.make_move_uci("e5d4").unwrap(); 
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_chess_board_move_generation_en_passant_capture_reveal_black() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("8/8/8/8/1k1pPQK1/8/8/8 b - e3 0 1");
+        board.make_move_uci("d4e3").unwrap(); 
+    }
+
+    #[test]
+    fn test_chess_board_move_generation_en_passant_in_check() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("8/8/3p4/1Pp4r/1K3p2/6k1/4P1P1/1R6 w - c6 0 3");
+        board.make_move_uci("b5c6").expect("en passant resolves the check and as such, should be allowed")
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_chess_board_move_generation_double_pin_on_rook() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P1RPP/q2Q2K1 w kq - 0 2");
+        board.make_move_uci("f2f1").unwrap(); 
+    }
+}
+

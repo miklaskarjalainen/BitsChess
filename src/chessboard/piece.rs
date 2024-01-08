@@ -44,6 +44,14 @@ impl PieceType {
         return PieceType::PIECE_VALUE[*self as usize];
     }
 
+    pub const fn get_index(&self) -> usize {
+        return (*self as usize) - 1
+    }
+
+    pub const fn get_side_index(&self, side: PieceColor) -> usize {
+        return (side as usize) *6 + (*self as usize) - 1
+    }
+
     fn from_char(ch: char) -> PieceType {
         match ch.to_ascii_lowercase() {
             'p' => { PieceType::Pawn }

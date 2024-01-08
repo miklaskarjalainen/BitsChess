@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use super::board_helper::BoardHelper;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BitBoard(u64);
@@ -39,6 +40,29 @@ lazy_static! {
         let mut map = [0; 64];
         for square in 0..64 {
             map[square] = BitBoard::get_king_attack(square as i32);
+        }
+        map
+    };
+
+    pub static ref BETWEENS: [[u64; 64]; 64] = {
+        let mut map = [[0u64; 64]; 64];
+        for from in 0..64 {
+            for to in 0..64 {
+                let occupancy = 1u64 << from;
+                let to_bishop_mask   = BitBoard::get_bishop_attack_mask(to, occupancy).get_bits();
+                let to_rook_mask     = BitBoard::get_rook_attack_mask(to, occupancy) .get_bits();
+                
+                let occupancy_2 = 1u64 << to;
+                let from_bishop_mask = BitBoard::get_bishop_attack_mask(from, occupancy_2).get_bits();
+                let from_rook_mask = BitBoard::get_rook_attack_mask(from, occupancy_2).get_bits();
+
+                if (to_bishop_mask & occupancy) != 0 {
+                    map[from as usize][to as usize] = to_bishop_mask & from_bishop_mask;
+                }
+                else if (to_rook_mask & occupancy) != 0 {
+                    map[from as usize][to as usize] = to_rook_mask & from_rook_mask;
+                }
+            }
         }
         map
     };
@@ -119,7 +143,6 @@ impl BitBoard {
     }
 
     fn get_pawn_attack(side: PieceColor, square: i32) -> u64 {
-        // https://www.youtube.com/watch?v=OTWG4dERdSc&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs&index=3&ab_channel=ChessProgramming
         let mut attacks = 0u64;
         let mut bitboard = BitBoard::new(0);
         bitboard.set_bit(square);

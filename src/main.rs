@@ -2,8 +2,8 @@ mod chessboard;
 
 use chessboard::board::fen::STARTPOS_FEN;
 use chessboard::board::{ChessBoard, CHESSBOARD_WIDTH};
-
-use crate::chessboard::board_helper::BoardHelper;
+use chessboard::board_helper::BoardHelper;
+use chessboard::bitboard::*;
 
 fn main() {
     let mut board = ChessBoard::new();
@@ -47,6 +47,32 @@ fn main() {
                     println!("error while parsing numerical value")
                 }
             }
+        }
+        else if args[0] == "attackmask" {
+            use crate::chessboard::board::move_generation::MoveGenerator;
+            let atk = MoveGenerator::get_attack_mask(&board);
+            println!("{}", BitBoard::new(atk));
+        }
+        else if args[0] == "checkmask" {
+            use crate::chessboard::board::move_generation::MoveGenerator;
+            let (double_check, all_pieces) = MoveGenerator::get_check_mask(&board);
+            println!("double_check: {}\n{}", double_check, BitBoard::new(all_pieces));
+        }
+        else if args[0] == "pinmask" {
+            use crate::chessboard::board::move_generation::MoveGenerator;
+            let (hv, d12) = MoveGenerator::get_pinned_mask(&board);
+
+            println!("HorizontalVertical: \n{}", BitBoard::new(hv));
+            println!("Diagonal: \n{}", BitBoard::new(d12));
+        }
+        else if args[0] == "fen" {
+            println!("FEN: {}", board.to_fen());
+        }
+        else if args.len() == 2 && args[0] == "boards" {
+            use crate::chessboard::board::magics::ROOK_MASK;
+            let square = BoardHelper::text_to_square(&args.last().unwrap()[0..2]);
+            
+            println!("{}", BitBoard::new(ROOK_MASK[square as usize]));
         }
         else if args.len() == 2 && args[0] == "moves" {
             let square = BoardHelper::text_to_square(&args.last().unwrap()[0..2]);
