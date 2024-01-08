@@ -50,6 +50,10 @@ impl BoardHelper {
 
     /// ```(file, rank)```
     pub fn square_to_chars(square: i32 ) -> (char, char) {
+        if square == -1 {
+            return ('-', '-');
+        }
+
         let rank = (b'0' + (Self::get_rank(square) + 1) as u8) as char;
         let file: char = (b'a' + Self::get_file(square) as u8) as char;
         (file, rank)

@@ -87,7 +87,7 @@ impl std::fmt::Display for ChessBoard {
         str.push_str(format!("turn: {:?}\n", self.turn).as_str());
         str.push_str(format!("is in check: {}\n", self.is_king_in_check(turn)).as_str());
         str.push_str(format!("castle rights: {:?}\n", self.castling_rights).as_str());
-        str.push_str(format!("en_passant: {}\n", self.en_passant).as_str());
+        str.push_str(format!("en_passant: {} {:?}\n", self.en_passant, BoardHelper::square_to_chars(self.en_passant)).as_str());
         str.push_str(format!("half move: {}\n", self.half_move).as_str());
         str.push_str(format!("full move: {}\n", self.full_move).as_str());
         str.push_str(format!("zobrist: {}\n", self.zobrist_hash).as_str());
