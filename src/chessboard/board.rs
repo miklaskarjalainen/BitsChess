@@ -23,15 +23,6 @@ pub struct ChessBoard {
     pub side_bitboards: [BitBoard; 2],
     pub board: [Piece; 64],
 
-    // contains every piece
-    pieces : [[i32; 16]; 2], 
-    pawns  : [[i32; 8]; 2], 
-    knights: [[i32; 10]; 2], 
-    bishops: [[i32; 10]; 2], 
-    rooks  : [[i32; 10]; 2], 
-    queens : [[i32; 9]; 2], 
-    kings  : [[i32; 1]; 2], 
-
     // flags
     pub turn: PieceColor,
     pub en_passant: i32,
@@ -394,12 +385,8 @@ impl ChessBoard {
         Some(move_made.board_move)
     }
 
-    pub fn get_pieces_for(&self, color: PieceColor) -> &[i32] {
-        return &self.pieces[color as usize];
-    }
-
-    pub fn get_pieces_for_mut(&mut self, color: PieceColor) -> &mut [i32] {
-        return &mut self.pieces[color as usize];
+    pub fn get_king_square(&self, king_color: PieceColor) -> i32 {
+        return BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)].get_bits());
     }
 
     // returns the piece that was on the square before
@@ -432,14 +419,6 @@ impl ChessBoard {
             bitboards: [BitBoard::new(0); 12],
             side_bitboards: [BitBoard::new(0); 2],
 
-            pieces : [[-1; 16]; 2],
-            pawns  : [[-1; 8]; 2],
-            knights: [[-1; 10]; 2],
-            bishops: [[-1; 10]; 2],
-            rooks  : [[-1; 10]; 2],
-            queens : [[-1; 9]; 2],
-            kings  : [[-1; 1]; 2],
-
             turn: PieceColor::White,
             en_passant: -1,
             castling_rights: [true; 4],
@@ -461,24 +440,6 @@ impl ChessBoard {
         self.bitboards[piece.get_piece_index()].clear_bit(square);
         self.side_bitboards[piece.get_color() as usize].clear_bit(square);
         self.zobrist_hash ^= piece.get_hash(square);
-        
-        // Piece Arrays
-        for e in self.get_array_for_piece(piece) {
-            if e == &square {
-                *e = -1;
-                break;
-            }
-        }
-
-        // Whole piece array
-        for e in self.get_pieces_for_mut(piece.get_color()) {
-            if e == &square {
-                *e = -1;
-                return;
-            }
-        }
-
-        panic!("not found!");
     }
 
     fn get_side_mask(&self, side: PieceColor) -> u64 {
@@ -490,50 +451,6 @@ impl ChessBoard {
         self.bitboards[piece.get_piece_index()].set_bit(square);
         self.side_bitboards[piece.get_color() as usize].set_bit(square);
         self.zobrist_hash ^= piece.get_hash(square);
-
-        // Piece arrays
-        let array = self.get_array_for_piece(piece);
-        for e in array {
-            if *e == -1  {
-                *e = square;
-                break;
-            }
-        }
-
-        // Whole piece array
-        for e in self.get_pieces_for_mut(piece.get_color()) {
-            if *e == -1  {
-                *e = square;
-                return;
-            }
-        }
-
-        panic!("no available slot! piece: {} square: {}", piece, square);
-    }
-
-    pub fn get_array_for_piece(&mut self, piece: Piece) -> &mut [i32] {
-        let color_idx = piece.get_color() as usize;
-        match piece.get_piece_type() {
-            PieceType::Pawn => {
-                return &mut self.pawns[color_idx];
-            }
-            PieceType::Knight => {
-                return &mut self.knights[color_idx];
-            }
-            PieceType::Bishop => {
-                return &mut self.bishops[color_idx];
-            }
-            PieceType::Rook => {
-                return &mut self.rooks[color_idx];
-            }
-            PieceType::Queen => {
-                return &mut self.queens[color_idx];
-            }
-            PieceType::King => {
-                return &mut self.kings[color_idx];
-            }
-            _ => { panic!("{:?}", piece); }
-        }
     }
 }
 

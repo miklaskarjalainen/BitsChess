@@ -1,7 +1,7 @@
 use super::{ChessBoard, CHESSBOARD_WIDTH};
 
 use crate::chessboard::board_helper::BoardHelper;
-use crate::chessboard::piece::{Piece, PieceColor};
+use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 
 pub const STARTPOS_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 pub const STARTPOS_FEN_BLACK: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
@@ -78,12 +78,12 @@ impl ChessBoard {
         }
         
         // Error checking
-        if self.kings[0][0] == -1 {
+        if self.bitboards[PieceType::King.get_side_index(PieceColor::White)].get_bits() == 0u64 {
             println!("FEN: parsing error, WHITE has no king!. Parsing ended.");
             self.clear();
             return;
         }
-        if self.kings[1][0] == -1 {
+        if self.bitboards[PieceType::King.get_side_index(PieceColor::Black)].get_bits() == 0u64 {
             println!("FEN: parsing error, BLACK has no king!. Parsing ended.");
             self.clear();
             return;
