@@ -211,12 +211,13 @@ impl MoveGenerator {
 
                 // If the pawn which moved 2 up is part of the pinned mask
                 let pawn_moved_mask = if color_idx == 0 {en_passant_square_mask >> 8} else {en_passant_square_mask << 8};
-                let pawn_moved_pinned = pawn_moved_mask & pin_mask != 0; 
-                let this_pawn = PAWN_ATTACKS[color_idx][pawn_square as usize] & en_passant_square_mask != 0;
+                let pawn_moved_diag_pinned = pawn_moved_mask & pin_d12 != 0; // only checking diagonal pins allows capturing vertically pinned pieces.
+                let en_passant_on_attack = PAWN_ATTACKS[color_idx][pawn_square as usize] & en_passant_square_mask != 0;
 
-                if !pawn_moved_pinned && this_pawn && (check_mask & pawn_moved_mask == pawn_moved_mask) {
+                if en_passant_on_attack && !pawn_moved_diag_pinned {
+                    
+                    // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1
                     if BoardHelper::get_rank(pawn_square) == BoardHelper::get_rank(king_square) {
-                        // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1
                         let opp_rq = board.bitboards[PieceType::Rook.get_side_index(board.turn.flipped())].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn.flipped())].get_bits();
                         
                         let two_pawn_mask = pawn_moved_mask | (1 << pawn_square);
@@ -227,7 +228,9 @@ impl MoveGenerator {
                             moves.push(Move::new(pawn_square, board.en_passant, MoveFlag::EnPassant));
                         }
                     }
-                    else {
+
+                    // Allows to en passant a checking pawn
+                    else if check_mask & pawn_moved_mask == pawn_moved_mask {
                         moves.push(Move::new(pawn_square, board.en_passant, MoveFlag::EnPassant));
                     }
                 }
@@ -454,6 +457,14 @@ mod tests {
         board.parse_fen("8/8/3p4/1Pp4r/1K3p2/6k1/4P1P1/1R6 w - c6 0 3");
         board.make_move_uci("b5c6").expect("en passant resolves the check and as such, should be allowed")
     }
+
+    #[test]
+    fn test_chess_board_move_generation_en_passant_vertical_pin() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("r1bqkbnr/ppp1pppp/8/2Pp4/8/8/PPPKPPPP/RNBQ1BNR w kq d6 0 4");
+        board.make_move_uci("b5c6").expect("en passant captures pinned piece and also resolves the pin so should be allowed")
+    }
+
 
     #[test]
     #[should_panic]
