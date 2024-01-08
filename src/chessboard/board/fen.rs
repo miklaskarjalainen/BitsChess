@@ -77,7 +77,18 @@ impl ChessBoard {
             }
         }
         
-        // 
+        // Error checking
+        if self.kings[0][0] == -1 {
+            println!("FEN: parsing error, WHITE has no king!. Parsing ended.");
+            self.clear();
+            return;
+        }
+        if self.kings[1][0] == -1 {
+            println!("FEN: parsing error, BLACK has no king!. Parsing ended.");
+            self.clear();
+            return;
+        }
+
         if self.is_king_in_check(self.get_turn().flipped()) {
             if !self.is_king_in_check(self.get_turn()) {
                 println!("FEN: parsing error, turn is {:?}, but {:?} is in CHECK.", self.get_turn(), self.get_turn().flipped());
