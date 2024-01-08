@@ -216,7 +216,7 @@ impl MoveGenerator {
 
                 if !pawn_moved_pinned && this_pawn && (check_mask & pawn_moved_mask == pawn_moved_mask) {
                     if BoardHelper::get_rank(pawn_square) == BoardHelper::get_rank(king_square) {
-                        // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1 DOESN'T WORK
+                        // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1
                         let opp_rq = board.bitboards[PieceType::Rook.get_side_index(board.turn.flipped())].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn.flipped())].get_bits();
                         
                         let two_pawn_mask = pawn_moved_mask | (1 << pawn_square);
@@ -295,56 +295,64 @@ impl MoveGenerator {
         let mut is_double_check = false;
 
         // Pawns
-        let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(opponent)].get_bits();
-        while pawns != 0 {
-            let pawn_square = BoardHelper::pop_rsb(&mut pawns);
-
-            let attack = PAWN_ATTACKS[opponent as usize][pawn_square as usize];
-            if (attack & king_mask) != 0 {
-                check_mask |= 1 << pawn_square;
-                is_double_check = is_checked;
-                is_checked = true;
+        {
+            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(opponent)].get_bits();
+            while pawns != 0 {
+                let pawn_square = BoardHelper::pop_rsb(&mut pawns);
+                
+                let attack = PAWN_ATTACKS[opponent as usize][pawn_square as usize];
+                if (attack & king_mask) != 0 {
+                    check_mask |= 1 << pawn_square;
+                    is_double_check = is_checked;
+                    is_checked = true;
+                }
             }
         }
  
         // Knights
-        let mut knights = board.bitboards[PieceType::Knight.get_side_index(opponent)].get_bits();
-        while knights != 0 {
-            let knight_square = BoardHelper::pop_rsb(&mut knights);
-
-            let attack = KNIGHT_ATTACKS[knight_square as usize];
-            if (attack & king_mask) != 0 {
-                check_mask |= 1 << knight_square;
-                is_double_check = is_checked;
-                is_checked = true;
+        {
+            let mut knights = board.bitboards[PieceType::Knight.get_side_index(opponent)].get_bits();
+            while knights != 0 {
+                let knight_square = BoardHelper::pop_rsb(&mut knights);
+                
+                let attack = KNIGHT_ATTACKS[knight_square as usize];
+                if (attack & king_mask) != 0 {
+                    check_mask |= 1 << knight_square;
+                    is_double_check = is_checked;
+                    is_checked = true;
+                }
             }
         }
 
         // Bishop
-        let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
-        while bishops != 0 {
-            let bishop_square = BoardHelper::pop_rsb(&mut bishops);
-            
-            let attack = get_bishop_magic(bishop_square, blockers);
-            if (attack & king_mask) != 0 {
-                check_mask |= attack & get_bishop_magic(king_square, blockers);
-                check_mask |= 1 << bishop_square;
-                is_double_check = is_checked;
-                is_checked = true;
+        {
+            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+            while bishops != 0 {
+                let bishop_square = BoardHelper::pop_rsb(&mut bishops);
+                
+                let attack = get_bishop_magic(bishop_square, blockers);
+                if (attack & king_mask) != 0 {
+                    check_mask |= attack & get_bishop_magic(king_square, blockers);
+                    check_mask |= 1 << bishop_square;
+                    is_double_check = is_checked;
+                    is_checked = true;
+                }
             }
         }
-
-        // Rooks
-        let mut rooks = board.bitboards[PieceType::Rook.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
-        while rooks != 0 {
-            let rook_square = BoardHelper::pop_rsb(&mut rooks);
             
-            let attack = get_rook_magic(rook_square, blockers);
-            if (attack & king_mask) != 0 {
-                check_mask |= attack & get_rook_magic(king_square, blockers);
-                check_mask |= 1 << rook_square;
-                is_double_check = is_checked;
-                is_checked = true;
+        // Rooks
+        {
+            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+            while rooks != 0 {
+                let rook_square = BoardHelper::pop_rsb(&mut rooks);
+                
+                let attack = get_rook_magic(rook_square, blockers);
+                if (attack & king_mask) != 0 {
+                    check_mask |= attack & get_rook_magic(king_square, blockers);
+                    check_mask |= 1 << rook_square;
+                    is_double_check = is_checked;
+                    is_checked = true;
+                }
             }
         }
         
