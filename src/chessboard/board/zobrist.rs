@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test_make_move_zobrist_updation_basic() {
         let mut board = ChessBoard::new();
-        board.parse_fen(STARTPOS_FEN);
+        board.parse_fen(STARTPOS_FEN).expect("valid fen");
         board.make_move_uci("e2e4");
         board.make_move_uci("e7e5");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
@@ -90,12 +90,12 @@ mod tests {
     #[test]
     fn test_make_move_zobrist_updation_castling() {
         let mut board = ChessBoard::new();
-        board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1").expect("valid fen");
         board.make_move_uci("e1g1");
         board.make_move_uci("e8c8");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     
-        board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1").expect("valid fen");
         board.make_move_uci("e8g8");
         board.make_move_uci("e1b1");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
@@ -104,7 +104,7 @@ mod tests {
     #[test]
     fn test_make_undo_move_zobrist_updation_basic() {
         let mut board = ChessBoard::new();
-        board.parse_fen(STARTPOS_FEN);
+        board.parse_fen(STARTPOS_FEN).expect("valid fen");
         board.make_move_uci("e2e4");
         board.make_move_uci("e7e5");
         board.unmake_move();

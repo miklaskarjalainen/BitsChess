@@ -510,7 +510,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_queen_promotion() {
         let mut board = ChessBoard::new();
-        board.parse_fen(TEST_PROMOTION_FEN);
+        board.parse_fen(TEST_PROMOTION_FEN).expect("valid fen");
 
         board.make_move(Move::from_uci("f2f1q"), false);
         let piece = board.get_piece(BoardHelper::text_to_square("f1"));
@@ -520,7 +520,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_rook_promotion() {
         let mut board = ChessBoard::new();
-        board.parse_fen(TEST_PROMOTION_FEN);
+        board.parse_fen(TEST_PROMOTION_FEN).expect("valid fen");
         board.set_turn(PieceColor::White);
 
         board.make_move(Move::from_uci("f2f1r"), false);
@@ -531,7 +531,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_bishop_promotion() {
         let mut board = ChessBoard::new();
-        board.parse_fen(TEST_PROMOTION_FEN);
+        board.parse_fen(TEST_PROMOTION_FEN).expect("valid fen");
 
         board.make_move(Move::from_uci("f2f1b"), false);
         let piece = board.get_piece(BoardHelper::text_to_square("f1"));
@@ -541,7 +541,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_knight_promotion() {
         let mut board = ChessBoard::new();
-        board.parse_fen(TEST_PROMOTION_FEN);
+        board.parse_fen(TEST_PROMOTION_FEN).expect("valid fen");
 
         board.make_move(Move::from_uci("f2f1n"), false);
         let piece = board.get_piece(BoardHelper::text_to_square("f1"));
@@ -551,7 +551,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_pawn_2_up() {
         let mut board = ChessBoard::new();
-        board.parse_fen("4k3/6p1/8/5P2/8/8/8/4K3 b - - 0 1");
+        board.parse_fen("4k3/6p1/8/5P2/8/8/8/4K3 b - - 0 1").expect("valid fen");
         board.make_move_uci("g7g5").unwrap();
         assert_eq!(board.en_passant, BoardHelper::text_to_square("g6"));
     }
@@ -559,7 +559,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_en_passant_basic_white() {
         let mut board = ChessBoard::new();
-        board.parse_fen("4k3/8/8/5Pp1/8/8/8/4K3 w - g6 0 1");
+        board.parse_fen("4k3/8/8/5Pp1/8/8/8/4K3 w - g6 0 1").expect("valid fen");
         board.make_move_uci("f5g6").unwrap();
 
         assert_eq!(board.en_passant, -1);
@@ -569,7 +569,7 @@ mod tests {
     #[test]
     fn test_chessboard_make_move_en_passant_basic_black() {
         let mut board = ChessBoard::new();
-        board.parse_fen("8/8/8/8/3pP3/k6K/8/8 b - e3 0 1");
+        board.parse_fen("8/8/8/8/3pP3/k6K/8/8 b - e3 0 1").expect("valid fen");
         board.make_move_uci("d4e3").unwrap();
 
         assert_eq!(board.en_passant, -1);
@@ -580,7 +580,7 @@ mod tests {
 
     fn _test_unmake_move(fen: &str, uci_move: &str) {
         let mut board = ChessBoard::new();
-        board.parse_fen(fen);
+        board.parse_fen(fen).expect("valid fen");
 
         let copy = board.clone();
         board.make_move_uci(uci_move);

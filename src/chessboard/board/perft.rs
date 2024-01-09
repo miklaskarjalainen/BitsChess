@@ -39,7 +39,7 @@ mod tests {
     
     fn _test_do_perft(fen: &str, depth: u32) -> u64 {
         let mut board = ChessBoard::new();
-        board.parse_fen(fen);
+        board.parse_fen(fen).expect("valid fen");
         board.perft(depth, true)
     }
 

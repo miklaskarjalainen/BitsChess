@@ -441,7 +441,7 @@ mod tests {
     #[should_panic]
     fn test_chess_board_move_generation_en_passant_pin() {
         let mut board = ChessBoard::new();
-        board.parse_fen("qk6/8/8/3pP3/8/5K2/8/8 w - d6 0 1");
+        board.parse_fen("qk6/8/8/3pP3/8/5K2/8/8 w - d6 0 1").expect("valid fen");
         board.make_move_uci("e5d6").unwrap(); 
     }
 
@@ -449,7 +449,7 @@ mod tests {
     #[should_panic]
     fn test_chess_board_move_generation_en_passant_capture_reveal() {
         let mut board = ChessBoard::new();
-        board.parse_fen("8/8/8/1kqpP1K1/8/8/8/8 w - d6 0 1");
+        board.parse_fen("8/8/8/1kqpP1K1/8/8/8/8 w - d6 0 1").expect("valid fen");
         board.make_move_uci("e5d4").unwrap(); 
     }
 
@@ -457,21 +457,21 @@ mod tests {
     #[should_panic]
     fn test_chess_board_move_generation_en_passant_capture_reveal_black() {
         let mut board = ChessBoard::new();
-        board.parse_fen("8/8/8/8/1k1pPQK1/8/8/8 b - e3 0 1");
+        board.parse_fen("8/8/8/8/1k1pPQK1/8/8/8 b - e3 0 1").expect("valid fen");
         board.make_move_uci("d4e3").unwrap(); 
     }
 
     #[test]
     fn test_chess_board_move_generation_en_passant_in_check() {
         let mut board = ChessBoard::new();
-        board.parse_fen("8/8/3p4/1Pp4r/1K3p2/6k1/4P1P1/1R6 w - c6 0 3");
+        board.parse_fen("8/8/3p4/1Pp4r/1K3p2/6k1/4P1P1/1R6 w - c6 0 3").expect("valid fen");
         board.make_move_uci("b5c6").expect("en passant resolves the check and as such, should be allowed")
     }
 
     #[test]
     fn test_chess_board_move_generation_en_passant_vertical_pin() {
         let mut board = ChessBoard::new();
-        board.parse_fen("r1bqkbnr/ppp1pppp/8/2Pp4/8/8/PPPKPPPP/RNBQ1BNR w kq d6 0 4");
+        board.parse_fen("r1bqkbnr/ppp1pppp/8/2Pp4/8/8/PPPKPPPP/RNBQ1BNR w kq d6 0 4").expect("valid fen");
         board.make_move_uci("c5d6").expect("en passant captures pinned piece and also resolves the pin so should be allowed")
     }
 
@@ -479,7 +479,7 @@ mod tests {
     #[should_panic]
     fn test_chess_board_move_generation_double_pin_on_rook() {
         let mut board = ChessBoard::new();
-        board.parse_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P1RPP/q2Q2K1 w kq - 0 2");
+        board.parse_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P1RPP/q2Q2K1 w kq - 0 2").expect("valid fen");
         board.make_move_uci("f2f1").unwrap(); 
     }
 
@@ -487,7 +487,7 @@ mod tests {
     #[should_panic]
     fn test_chess_board_move_generation_pawn_jumping_pin_masks() {
         let mut board = ChessBoard::new();
-        board.parse_fen("6k1/6p1/8/1r2p2K/4b1P1/P7/8/3q4 w - - 3 49");
+        board.parse_fen("6k1/6p1/8/1r2p2K/4b1P1/P7/8/3q4 w - - 3 49").expect("valid fen");
         board.make_move_uci("g4g5").unwrap(); 
     }
 
@@ -495,7 +495,7 @@ mod tests {
     #[should_panic]
     fn test_chess_board_move_generation_pawn_jumping_pin_masks_capture() {
         let mut board = ChessBoard::new();
-        board.parse_fen("8/R4p1k/5rP1/8/1P2Q3/P7/5P2/5K2 b - - 0 52");
+        board.parse_fen("8/R4p1k/5rP1/8/1P2Q3/P7/5P2/5K2 b - - 0 52").expect("valid fen");
         board.make_move_uci("f7g6").unwrap(); 
     }
 }

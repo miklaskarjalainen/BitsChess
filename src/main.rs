@@ -8,8 +8,7 @@ use chessboard::bitboard::*;
 fn main() {
     let mut board = ChessBoard::new();
     println!("Welcome to BitChess' interface!");
-    
-    board.parse_fen(STARTPOS_FEN);
+    board.parse_fen(STARTPOS_FEN).expect("valid fen");
 
     loop {
         let line = std::io::stdin().lines().next().unwrap().unwrap();

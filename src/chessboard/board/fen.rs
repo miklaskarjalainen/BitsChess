@@ -6,9 +6,16 @@ use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 pub const STARTPOS_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 pub const STARTPOS_FEN_BLACK: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
 
+#[derive(Debug, PartialEq)]
+pub enum FenParsingError {
+    NoWhiteKing,
+    NoBlackKing,
+    OpponentInCheck
+}
+
 impl ChessBoard {
 
-    pub fn parse_fen(&mut self, fen_whole: &str) {
+    pub fn parse_fen(&mut self, fen_whole: &str) -> Result<(), FenParsingError> {
         let mut args: Vec<&str> = fen_whole.split(' ').rev().collect();
         
         // Clear Board
@@ -79,30 +86,23 @@ impl ChessBoard {
         
         // Error checking
         if self.bitboards[PieceType::King.get_side_index(PieceColor::White)].get_bits() == 0u64 {
-            println!("FEN: parsing error, WHITE has no king!. Parsing ended.");
             self.clear();
-            return;
+            return Err(FenParsingError::NoWhiteKing);
         }
         if self.bitboards[PieceType::King.get_side_index(PieceColor::Black)].get_bits() == 0u64 {
-            println!("FEN: parsing error, BLACK has no king!. Parsing ended.");
             self.clear();
-            return;
+            return Err(FenParsingError::NoBlackKing);
         }
 
         if self.is_king_in_check(self.get_turn().flipped()) {
-            if !self.is_king_in_check(self.get_turn()) {
-                println!("FEN: parsing error, turn is {:?}, but {:?} is in CHECK.", self.get_turn(), self.get_turn().flipped());
-                self.turn.flip();
-                println!("FEN: forced the turn to be {:?}", self.turn);
-            }
-            else {
-                println!("FEN: parsing error, both sides are in CHECK. Will cause undefined behaviour");
-            }
+            self.clear();
+            return Err(FenParsingError::OpponentInCheck);
         }
 
         let hash = self.create_zobrist_hash();
         self.repetitions.increment_repetition(hash);
         self.zobrist_hash = hash;
+        Ok(())
     }
 
     pub fn to_fen(&self) -> String {
@@ -184,7 +184,7 @@ mod tests {
     #[test]
     fn test_parse_fen_basic1() {
         let mut board = ChessBoard::new();
-        board.parse_fen("4k3/2P5/4K3/8/8/8/5p2/8 b - - 0 1");
+        board.parse_fen("4k3/2P5/4K3/8/8/8/5p2/8 b - - 0 1").expect("valid fen");
 
         assert_eq!(board.get_turn(), PieceColor::Black);
 
@@ -194,25 +194,44 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_fen_parsing_error_opponent_in_check() {
+        let mut board = ChessBoard::new();
+        assert_eq!(board.parse_fen("k7/4n3/8/3K4/8/1N6/8/8 b - - 0 1"), Err(FenParsingError::OpponentInCheck));
+        assert_eq!(board.parse_fen("k7/8/1N6/3K4/8/1n6/8/8 w - - 0 1"), Err(FenParsingError::OpponentInCheck));
+    }
+
+    #[test]
+    fn test_parse_fen_parsing_no_white_king() {
+        let mut board = ChessBoard::new();
+        assert_eq!(board.parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w HAkq - 0 1"), Err(FenParsingError::NoWhiteKing));
+    }
+
+    #[test]
+    fn test_parse_fen_parsing_no_black_king() {
+        let mut board = ChessBoard::new();
+        assert_eq!(board.parse_fen("rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQha - 0 1"), Err(FenParsingError::NoBlackKing));
+    }
+
+    #[test]
+    fn test_to_fen_start_pos() {
+        let mut board = ChessBoard::new();
+        board.parse_fen(STARTPOS_FEN).expect("valid fen");
+        board.make_move_uci("e2e4");
+        assert_eq!(board.to_fen(), "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    }
+
+    #[test]
     fn test_parse_fen_en_passant() {
         let mut board = ChessBoard::new();
-        board.parse_fen("4k3/8/8/5Pp1/8/8/8/4K3 w - g6 0 1");
+        board.parse_fen("4k3/8/8/5Pp1/8/8/8/4K3 w - g6 0 1").expect("valid fen");
         assert_eq!(board.en_passant, BoardHelper::text_to_square("g6"));
     }
 
     #[test]
     fn test_parse_fen_half_and_full_moves() {
         let mut board = ChessBoard::new();
-        board.parse_fen("8/4k3/3p1p2/2pP1Pp1/2P1K1P1/8/8/8 w - - 69 420");
+        board.parse_fen("8/4k3/3p1p2/2pP1Pp1/2P1K1P1/8/8/8 w - - 69 420").expect("valid fen");
         assert_eq!(board.half_move, 69);
         assert_eq!(board.full_move, 420);
-    }
-
-    #[test]
-    fn test_to_fen_startpos() {
-        let mut board = ChessBoard::new();
-        board.parse_fen(STARTPOS_FEN);
-        board.make_move_uci("e2e4");
-        assert_eq!(board.to_fen(), "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     }
 }
