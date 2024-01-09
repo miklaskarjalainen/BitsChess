@@ -101,7 +101,7 @@ impl ChessBoard {
         }
 
         let hash = self.create_zobrist_hash();
-        self.repetitions.insert(hash, 1);
+        self.repetitions.increment_repetition(hash);
         self.zobrist_hash = hash;
     }
 

@@ -2,11 +2,11 @@ pub mod fen;
 pub mod magics;
 pub mod move_generation;
 pub mod perft;
+pub mod repetition_table;
 pub mod zobrist;
 
-use std::collections::HashMap;
-
 use move_generation::MoveGenerator;
+use repetition_table::RepetitionTable;
 use super::bitboard::BitBoard;
 use super::board_helper::BoardHelper;
 use super::chessmove::{Move, MoveFlag, ReversibleMove};
@@ -32,7 +32,7 @@ pub struct ChessBoard {
     pub full_move: u16,
     pub zobrist_hash: u64,
 
-    repetitions: HashMap<u64, u8>,
+    repetitions: RepetitionTable,
     move_history: Vec<ReversibleMove>,
 }
 
@@ -82,7 +82,7 @@ impl std::fmt::Display for ChessBoard {
         str.push_str(format!("half move: {}\n", self.half_move).as_str());
         str.push_str(format!("full move: {}\n", self.full_move).as_str());
         str.push_str(format!("zobrist: {}\n", self.zobrist_hash).as_str());
-        str.push_str(format!("repetitions: {:?}\n", self.repetitions).as_str());
+        str.push_str(format!("repetitions: {}\n", self.repetitions).as_str());
         str.push('[');
         for m in &self.move_history {
             str.push_str(format!("'{}', ", &m.board_move.to_uci()).as_str());
@@ -169,16 +169,10 @@ impl ChessBoard {
                 let captured = self.set_piece(to + en_passant_dir, Piece::new(0));
 
                 // Save to history
-                let save_repetition = !is_in_search || self.repetitions.contains_key(&self.zobrist_hash);
+                let save_repetition = if is_in_search { self.repetitions.increment_existing_repetition(self.zobrist_hash) } else { self.repetitions.increment_repetition(self.zobrist_hash) };
                 let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move, self.zobrist_hash, save_repetition);
                 self.move_history.push(reversible);
                 self.half_move = 0;
-                
-                if save_repetition {
-                    self.repetitions.entry(self.zobrist_hash)
-                        .and_modify(|h| *h += 1)
-                        .or_insert(1);
-                }
                 return;
             }
             MoveFlag::PawnTwoUp => {
@@ -228,6 +222,11 @@ impl ChessBoard {
 
         // Half move
         if !captured.is_none() || moving_piece.get_piece_type() == PieceType::Pawn {
+            if !is_in_search {
+                // to even more reduce hash collisions, delete after every half move reset,
+                // because there's no way the same position is going to be achieved anymore.
+                self.repetitions.clear();
+            }
             self.half_move = 0;
         } else {
             self.half_move += 1
@@ -294,15 +293,9 @@ impl ChessBoard {
         }
 
         // Save to history
-        let save_repetition = !is_in_search || self.repetitions.contains_key(&self.zobrist_hash);
+        let save_repetition = if is_in_search { self.repetitions.increment_existing_repetition(self.zobrist_hash) } else { self.repetitions.increment_repetition(self.zobrist_hash) };
         let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, castling_hold, half_move_hold, zobrist_hold, save_repetition);
         self.move_history.push(reversible);
-
-        if save_repetition {
-            self.repetitions.entry(self.zobrist_hash)
-                .and_modify(|h| *h += 1)
-                .or_insert(1);
-        }
     }
 
     // Not able to move not counted here.
@@ -312,9 +305,10 @@ impl ChessBoard {
             return true;
         }
 
-        if let Some(reps) = self.repetitions.get(&self.zobrist_hash) {
+
+        if let Some(reps) = self.repetitions.get_repetitions(self.zobrist_hash) {
             // 3-fold repetition
-            if *reps >= 3u8 {
+            if reps >= 3u8 {
                 return true;
             }
         }
@@ -326,8 +320,7 @@ impl ChessBoard {
         
         let move_made = self.move_history.pop().unwrap();
         if move_made.repetition_saved {
-            self.repetitions.entry(self.zobrist_hash)
-                .and_modify(|r| *r -= 1);
+            self.repetitions.decrement_repetition(self.zobrist_hash);
         }
 
         // Undo capture
@@ -439,7 +432,7 @@ impl ChessBoard {
             full_move: 1,
             zobrist_hash: 0,
 
-            repetitions: HashMap::new(),
+            repetitions: RepetitionTable::new(),
             move_history: vec![],
         };
         x.new_game();

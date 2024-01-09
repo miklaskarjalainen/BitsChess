@@ -165,6 +165,7 @@ fn generate_blocker_bitboards(mask: u64) -> Vec<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_magic_bitboard_rook_storing_correct_mask() {
