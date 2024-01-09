@@ -32,7 +32,7 @@ impl MoveFlag {
 // 6-11 bits to
 // 12-15 Flags 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Move(u16);
+pub struct Move(pub u16);
 
 impl Move {
     #[inline(always)]
