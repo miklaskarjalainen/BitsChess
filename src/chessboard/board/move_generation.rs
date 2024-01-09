@@ -174,12 +174,13 @@ impl MoveGenerator {
 
             let mut promotable_moves = 0u64;
             let current_rank = BoardHelper::get_rank(pawn_square);
-
+            
             // Attack
-            if pin_mask & (1 << pawn_square) != 0 {
-                promotable_moves |= PAWN_ATTACKS[color_idx][pawn_square as usize] & enemy_pieces & check_mask & pin_d12;
-            } else {
+            if pin_mask & (1 << pawn_square) == 0 {
                 promotable_moves |= PAWN_ATTACKS[color_idx][pawn_square as usize] & enemy_pieces & check_mask;
+            }
+            else if pin_d12 & (1 << pawn_square) != 0 && pin_hv & (1 << pawn_square) == 0 {
+                promotable_moves |= PAWN_ATTACKS[color_idx][pawn_square as usize] & enemy_pieces & check_mask & pin_d12;
             }
 
             // Advance by 1
@@ -488,6 +489,14 @@ mod tests {
         let mut board = ChessBoard::new();
         board.parse_fen("6k1/6p1/8/1r2p2K/4b1P1/P7/8/3q4 w - - 3 49");
         board.make_move_uci("g4g5").unwrap(); 
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_chess_board_move_generation_pawn_jumping_pin_masks_capture() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("8/R4p1k/5rP1/8/1P2Q3/P7/5P2/5K2 b - - 0 52");
+        board.make_move_uci("f7g6").unwrap(); 
     }
 }
 
