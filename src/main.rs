@@ -76,26 +76,7 @@ fn main() {
         }
         else if args.len() == 2 && args[0] == "moves" {
             let square = BoardHelper::text_to_square(&args.last().unwrap()[0..2]);
-            let moves = board.get_legal_moves_for_square(square);
-
-            let mut str = String::from("");
-            for y in (0..=7).rev() {
-                str.push('|');
-                for x in 0..=7 {
-                    str.push(board.get_piece(y * CHESSBOARD_WIDTH + x).to_char());
-                    for m in &moves {
-                        if m.get_to_idx() == (y*CHESSBOARD_WIDTH+x) {
-                            str.pop().unwrap();
-                            str.push('*');
-                            break;
-                        }
-                    }
-                    str.push('|');
-                }
-                str.push('\n');
-            }
-
-            println!("{}", str);
+            board.print_legal_moves_for_square(square);
         }
         else if &line == "quit" {
             return;

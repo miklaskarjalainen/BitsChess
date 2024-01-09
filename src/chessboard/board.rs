@@ -83,6 +83,7 @@ impl std::fmt::Display for ChessBoard {
         str.push_str(format!("full move: {}\n", self.full_move).as_str());
         str.push_str(format!("zobrist: {}\n", self.zobrist_hash).as_str());
         str.push_str(format!("repetitions: {}\n", self.repetitions).as_str());
+        str.push_str("move_history: ");
         str.push('[');
         for m in &self.move_history {
             str.push_str(format!("'{}', ", &m.board_move.to_uci()).as_str());
@@ -141,6 +142,35 @@ impl ChessBoard {
     #[inline(always)]
     pub fn get_legal_moves_for_square(&self, square: i32) -> Vec<Move> { 
         MoveGenerator::get_legal_moves_for_square(self, square)
+    }
+
+    pub fn print_legal_moves_for_square(&self, square: i32) {
+        let moves = self.get_legal_moves_for_square(square);
+        let mut str = String::from("");
+        
+        str.push_str("   a b c d e f g h\n");
+        for y in (0..=7).rev() {
+            str.push_str((y+1).to_string().as_str());
+            str.push(' ');
+            str.push('|');
+            for x in 0..=7 {
+                str.push(self.get_piece(y * CHESSBOARD_WIDTH + x).to_char());
+                for m in &moves {
+                    if m.get_to_idx() == (y*CHESSBOARD_WIDTH+x) {
+                        str.pop().unwrap();
+                        str.push('*');
+                        break;
+                    }
+                }
+                str.push('|');
+            }
+            str.push(' ');
+            str.push_str((y+1).to_string().as_str());
+            str.push('\n');
+        }
+        str.push_str("   a b c d e f g h\n");
+
+        println!("{}", str);
     }
 
     pub fn make_move(&mut self, chess_move: Move, is_in_search: bool) {
