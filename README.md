@@ -1,7 +1,7 @@
 # BitsChess
 
 BitsChess is a chess library written in Rust. It was mainly written for the chess engine [GiffiBot](https://github.com/miklaskarjalainen/GiffiBot) which i'm currently working on, but BitsChess is open for everybody to use under the [MIT license](./LICENSE).  
-Behind the scenes BitsChess uses [bitboards](https://www.chessprogramming.org/Bitboards) for [board representation](https://www.chessprogramming.org/Board_Representation) and [magic bitboards](https://www.chessprogramming.org/Magic_Bitboards) and [attack, check, pin -masks](https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)) for [move generation](https://www.chessprogramming.org/Move_Generation).
+Behind the scenes BitsChess uses [bitboards](https://www.chessprogramming.org/Bitboards) for [board representation](https://www.chessprogramming.org/Board_Representation). [Attack, check, pin -masks](https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)) and [magic bitboards](https://www.chessprogramming.org/Magic_Bitboards) for [move generation](https://www.chessprogramming.org/Move_Generation).
 
 ## Using in a project
 
