@@ -45,18 +45,20 @@ impl MoveGenerator {
     }
 
     #[inline(always)]
-    fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
+    fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>, is_quiet: bool) {
         while move_mask != 0 {
-            let square_to = BoardHelper::bitscan_forward(move_mask);
-            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteKnight));
-            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteBishop));
-            out_moves.push(Move::new(from, square_to, MoveFlag::PromoteRook));
+            let square_to = BoardHelper::pop_rsb(&mut move_mask);
+            if is_quiet {
+                out_moves.push(Move::new(from, square_to, MoveFlag::PromoteKnight));
+                out_moves.push(Move::new(from, square_to, MoveFlag::PromoteBishop));
+                out_moves.push(Move::new(from, square_to, MoveFlag::PromoteRook));
+            }
             out_moves.push(Move::new(from, square_to, MoveFlag::PromoteQueen));
-            move_mask ^= 1u64 << square_to;
         }
     }
 
-    pub fn get_legal_moves(board: &ChessBoard) -> Vec<Move> {
+    /// if generate_quiet == false then moves which doesn't either capture or promote to a queen won't be generated.
+    pub fn get_legal_moves(board: &ChessBoard, generate_quiet: bool) -> Vec<Move> {
         use crate::chessboard::bitboard;
         let color_idx = board.turn as usize;
         let enemy_bitboard_idx = board.turn.flipped() as usize;
@@ -68,6 +70,7 @@ impl MoveGenerator {
         let enemy_pieces = board.side_bitboards[enemy_bitboard_idx].get_bits();
         let all_pieces = friendly_pieces | enemy_pieces;
         let enemy_or_empty = (!0u64) ^ friendly_pieces;
+        let move_filter_mask = if generate_quiet { !0u64 } else { enemy_pieces };
 
         let (pin_hv, pin_d12) = Self::get_pinned_mask(board);
         let pin_mask = pin_hv | pin_d12;
@@ -76,7 +79,7 @@ impl MoveGenerator {
 
         // King 
         let king_square = board.get_king_square(board.turn);
-        let king_moves = KING_ATTACKS[king_square as usize] & !attack_mask & !friendly_pieces;
+        let king_moves = KING_ATTACKS[king_square as usize] & !attack_mask & !friendly_pieces & move_filter_mask;
         Self::generate_moves(king_square, king_moves, &mut moves);
 
         let king_attacked_mask = attack_mask & (1u64 << king_square);
@@ -89,7 +92,7 @@ impl MoveGenerator {
                 return moves;
             }
         }
-        else {
+        else if generate_quiet {
             // Castling
             let rights_idx = (color_idx) * 2;
             let rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)].get_bits();
@@ -130,7 +133,7 @@ impl MoveGenerator {
             // Pinned knight cannot move
             if pin_mask & (1 << knight_square) != 0 { continue; } 
 
-            let knight_attacks = bitboard::KNIGHT_ATTACKS[knight_square as usize] & enemy_or_empty & check_mask;
+            let knight_attacks = bitboard::KNIGHT_ATTACKS[knight_square as usize] & enemy_or_empty & check_mask & move_filter_mask;
             Self::generate_moves(knight_square, knight_attacks, &mut moves);
         } 
         
@@ -138,7 +141,7 @@ impl MoveGenerator {
         let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(board.turn)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn)].get_bits();
         while bishops != 0 {
             let bishop_square = BoardHelper::pop_rsb(&mut bishops);
-            let bishop_attacks = get_bishop_magic(bishop_square, all_pieces) & enemy_or_empty & check_mask;
+            let bishop_attacks = get_bishop_magic(bishop_square, all_pieces) & enemy_or_empty & check_mask & move_filter_mask;
             if pin_mask & (1 << bishop_square) != 0 {
                 // For Bishops the pin cannot be by horizontal/vertical moving piece for it be able to move  
                 if pin_hv & (1 << bishop_square) == 0 {
@@ -153,7 +156,7 @@ impl MoveGenerator {
         let mut rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn)].get_bits();
         while rooks != 0 {
             let rook_square = BoardHelper::pop_rsb(&mut rooks);
-            let rook_attacks = get_rook_magic(rook_square, all_pieces) & enemy_or_empty & check_mask;
+            let rook_attacks = get_rook_magic(rook_square, all_pieces) & enemy_or_empty & check_mask & move_filter_mask;
             if pin_mask & (1 << rook_square) != 0 {
                 // For rooks the pin cannot be by diagonal moving piece for it be able to move  
                 if pin_d12 & (1 << rook_square) == 0 {
@@ -183,7 +186,7 @@ impl MoveGenerator {
             let move_dir = if board.turn == PieceColor::White{ 8 } else { -8 };
             let move_mask = 1u64 << (pawn_square + move_dir);
             let pin_allowed_to_move = (pin_mask & (1 << pawn_square) == 0) || (move_mask & pin_hv) != 0;
-            if (all_pieces & move_mask) == 0 && pin_allowed_to_move {
+            if generate_quiet && (all_pieces & move_mask) == 0 && pin_allowed_to_move {
                 promotable_moves |= (1u64 << (pawn_square + move_dir)) & check_mask;
 
                 // Advance by 2
@@ -201,7 +204,7 @@ impl MoveGenerator {
             // Push promotable_moves
             let promotion_rank = if board.turn == PieceColor::White{ 6 } else { 1 };
             if promotion_rank == current_rank {
-                Self::generate_moves_promotion(pawn_square, promotable_moves, &mut moves);
+                Self::generate_moves_promotion(pawn_square, promotable_moves, &mut moves, generate_quiet);
             }
             else {
                 Self::generate_moves(pawn_square, promotable_moves, &mut moves);
@@ -245,7 +248,7 @@ impl MoveGenerator {
 
     #[inline(always)]
     pub fn get_legal_moves_for_square(board: &ChessBoard, square: i32) -> Vec<Move> {
-        Self::get_legal_moves(board).into_iter().filter(|m| {
+        Self::get_legal_moves(board, true).into_iter().filter(|m| {
             m.get_from_idx() == square
         }).collect()
     }

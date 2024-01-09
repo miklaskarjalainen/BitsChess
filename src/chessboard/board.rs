@@ -130,7 +130,12 @@ impl ChessBoard {
 
     #[inline(always)]
     pub fn get_legal_moves(&self) -> Vec<Move> { 
-        MoveGenerator::get_legal_moves(self)
+        MoveGenerator::get_legal_moves(self, true)
+    }
+
+    #[inline(always)]
+    pub fn get_legal_captures(&self) -> Vec<Move> { 
+        MoveGenerator::get_legal_moves(self, false)
     }
 
     #[inline(always)]
