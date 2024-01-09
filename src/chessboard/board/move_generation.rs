@@ -185,7 +185,7 @@ impl MoveGenerator {
             // Advance by 1
             let move_dir = if board.turn == PieceColor::White{ 8 } else { -8 };
             let move_mask = 1u64 << (pawn_square + move_dir);
-            let pin_allowed_to_move = (pin_mask & (1 << pawn_square) == 0) || (move_mask & pin_hv) != 0;
+            let pin_allowed_to_move = ((pin_hv & (1 << pawn_square) == 0) || (move_mask & pin_hv) != 0) && ((pin_d12 & (1 << pawn_square) == 0) || (move_mask & pin_d12) != 0); // don't allow pawn jumping pin masks
             if generate_quiet && (all_pieces & move_mask) == 0 && pin_allowed_to_move {
                 promotable_moves |= (1u64 << (pawn_square + move_dir)) & check_mask;
 
@@ -480,6 +480,14 @@ mod tests {
         let mut board = ChessBoard::new();
         board.parse_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P1RPP/q2Q2K1 w kq - 0 2");
         board.make_move_uci("f2f1").unwrap(); 
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_chess_board_move_generation_pawn_jumping_pin_masks() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("6k1/6p1/8/1r2p2K/4b1P1/P7/8/3q4 w - - 3 49");
+        board.make_move_uci("g4g5").unwrap(); 
     }
 }
 
