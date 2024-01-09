@@ -31,7 +31,9 @@ impl PieceColor {
     #[must_use]
     #[inline(always)]
     pub const fn flipped(&self) -> PieceColor {
-        Self::from_u8((*self as u8) + 1)
+        unsafe {
+            std::mem::transmute(*self as u8 ^ 0b1)
+        }
     }
 
     #[inline(always)]
