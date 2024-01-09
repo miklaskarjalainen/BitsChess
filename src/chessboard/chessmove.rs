@@ -15,13 +15,15 @@ pub enum MoveFlag {
 }
 
 impl MoveFlag {
-    pub fn from_u8(f: u8) -> MoveFlag {
+    #[inline(always)]
+    pub const fn from_u8(f: u8) -> MoveFlag {
         unsafe {
             std::mem::transmute(f & 0b111)
         }
     }
 
-    pub fn to_u8(&self) -> u8 {
+    #[inline(always)]
+    pub const fn to_u8(&self) -> u8 {
         *self as u8
     }
 }
@@ -33,7 +35,8 @@ impl MoveFlag {
 pub struct Move(u16);
 
 impl Move {
-    pub fn new(from: i32, to: i32, flag: MoveFlag) -> Self {
+    #[inline(always)]
+    pub const fn new(from: i32, to: i32, flag: MoveFlag) -> Self {
         let mut m = 0u16;
         m |= (from as u16) & 0b111111;
         m |= ((to as u16) & 0b111111) << 6;
@@ -41,27 +44,33 @@ impl Move {
         Self(m)
     }
 
-    pub fn get_flag(&self) -> MoveFlag {
+    #[inline(always)]
+    pub const fn get_flag(&self) -> MoveFlag {
         let flags = (self.0 >> 12) & 0b111;
         MoveFlag::from_u8(flags as u8)
     }
 
-    pub fn get_from_idx(&self) -> i32 {
+    #[inline(always)]
+    pub const fn get_from_idx(&self) -> i32 {
         (self.0 & 0b111111) as i32
     }
 
-    pub fn get_to_idx(&self) -> i32 {
+    #[inline(always)]
+    pub const fn get_to_idx(&self) -> i32 {
         ((self.0 >> 6) & 0b111111) as i32
     }
 
+    #[inline(always)]
     pub fn is_en_passant(&self) -> bool {
         self.get_flag() == MoveFlag::EnPassant
     }
 
+    #[inline(always)]
     pub fn is_castle(&self) -> bool {
         self.get_flag() == MoveFlag::Castle
     }
 
+    #[inline(always)]
     pub fn is_two_pawn_up(&self) -> bool {
         self.get_flag() == MoveFlag::PawnTwoUp
     }

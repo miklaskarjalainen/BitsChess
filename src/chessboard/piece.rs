@@ -21,17 +21,20 @@ pub enum PieceColor {
 
 impl PieceColor {
     #[must_use]
-    fn from_u8(val: u8) -> PieceColor {
+    #[inline(always)]
+    const fn from_u8(val: u8) -> PieceColor {
         unsafe { 
             std::mem::transmute(val & 0b1)
         }
     }
 
     #[must_use]
-    pub fn flipped(&self) -> PieceColor {
+    #[inline(always)]
+    pub const fn flipped(&self) -> PieceColor {
         Self::from_u8((*self as u8) + 1)
     }
 
+    #[inline(always)]
     pub fn flip(&mut self) {
         *self = self.flipped();
     }
@@ -40,16 +43,19 @@ impl PieceColor {
 impl PieceType {
     const PIECE_VALUE:[i32; 7] = [0, 100, 300, 320, 500, 900, 0];
 
+    #[inline(always)]
     pub const fn get_value(&self) -> i32 {
         return PieceType::PIECE_VALUE[*self as usize];
     }
 
+    #[inline(always)]
     pub const fn get_index(&self) -> usize {
         return (*self as usize) - 1
     }
 
+    #[inline(always)]
     pub const fn get_side_index(&self, side: PieceColor) -> usize {
-        return (side as usize) *6 + (*self as usize) - 1
+        return (side as usize) * 6 + (*self as usize) - 1
     }
 
     fn from_char(ch: char) -> PieceType {
@@ -76,7 +82,8 @@ impl PieceType {
         }
     }
 
-    fn from_u8(val: u8) -> PieceType {
+    #[inline(always)]
+    const fn from_u8(val: u8) -> PieceType {
         unsafe { 
             std::mem::transmute(val & 0b111)
         }
@@ -84,9 +91,7 @@ impl PieceType {
 }
 
 // Bit 7 -- Color of the piece (0 is white, 1 is black)
-// Bit 6-5 are unused
-// Bit 4 -- Castle flag for Kings only (0 can castle)
-// Bit 3 -- Piece has moved flag (1 has moved)
+// Bit 6-3 are unused
 // Bits 2-0 Piece Type
 //  0 -- Empty Square
 //  1 -- Pawn
@@ -100,80 +105,57 @@ impl PieceType {
 pub struct Piece(pub u8);
 
 impl Piece {
+    #[inline(always)]
     pub const fn new(flags: u8) -> Self {
         Self(flags)
     }
 
-    pub fn get_piece_value(&self) -> i32 {
+    #[inline(always)]
+    pub const fn get_piece_value(&self) -> i32 {
         self.get_piece_type().get_value()
     }
 
     // 0 = white pawn, 1 = white knight ... 6 = black pawn
-    pub fn get_piece_index(&self) -> usize {
+    #[inline(always)]
+    pub const fn get_piece_index(&self) -> usize {
         let t = self.get_piece_type();
         let c = self.get_color();
-
-        assert!(t != PieceType::None);
-        
-        let mut index = (t as u8) - 1;
-        if c == PieceColor::Black {
-            index += 6
-        }
-        index as usize
+        t.get_side_index(c)
     }
 
-    pub fn get_color(&self) -> PieceColor {
+    #[inline(always)]
+    pub const fn get_color(&self) -> PieceColor {
         PieceColor::from_u8(self.0 >> 7)
     }
 
-    pub fn is_white(&self) -> bool {
+    #[inline(always)]
+    pub const fn is_white(&self) -> bool {
         ((self.0 >> 7) & 0b1) == 0
     }
 
-    pub fn is_black(&self) -> bool {
+    #[inline(always)]
+    pub const fn is_black(&self) -> bool {
         ((self.0 >> 7) & 0b1) == 1
     }
 
-    pub fn has_moved(&self) -> bool {
-        ((self.0 >> 3) & 0b1) == 1
-    }
-
-    pub fn set_moved(&mut self, moved: bool) {
-        if moved {
-            self.0 |= 0b1 << 3;
-        }
-        else {
-            self.0 &= 0b11110111;
-        }
-    }
-
-    pub fn can_castle(&self) -> bool {
-        ((self.0 >> 4) & 0b1) == 0
-    }
-
-    pub fn set_can_castle(&mut self, flag: bool) {
-        if flag {
-            self.0 &= 0b11101111;
-        }
-        else {
-            self.0 |= 0b1 << 4;
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
+    #[inline(always)]
+    pub const fn is_none(&self) -> bool {
         (self.0 & 0b111) == 0 || self.0 == 0xFF
     }
 
+    #[inline(always)]
     pub fn set_piece(&mut self, t: PieceType) {
         self.0 &= 0b11111000; // unset piece bits
         self.0 |= (t as u8) & 0b111;
     }
 
-    pub fn get_piece(&self) -> u8 {
+    #[inline(always)]
+    pub const fn get_piece(&self) -> u8 {
         self.0 & 0b111
     }
-
-    pub fn get_piece_type(&self) -> PieceType {
+    
+    #[inline(always)]
+    pub const fn get_piece_type(&self) -> PieceType {
         PieceType::from_u8(self.get_piece())
     }
 

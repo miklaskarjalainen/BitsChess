@@ -9,6 +9,7 @@ use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 use crate::chessboard::board::magics::{get_bishop_magic, get_rook_magic};
 
 impl ChessBoard {
+    #[inline(always)]
     pub fn is_king_in_check(&self, king_color: PieceColor) -> bool {
         let king_square = self.get_king_square(king_color);
         self.is_square_in_check(king_color, king_square)
@@ -34,7 +35,8 @@ impl ChessBoard {
 pub struct MoveGenerator;
 
 impl MoveGenerator {
-    pub fn generate_moves(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
+    #[inline(always)]
+    fn generate_moves(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
         while move_mask != 0 {
             let square_to = BoardHelper::bitscan_forward(move_mask);
             out_moves.push(Move::new(from, square_to, MoveFlag::None));
@@ -42,7 +44,8 @@ impl MoveGenerator {
         }
     }
 
-    pub fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
+    #[inline(always)]
+    fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
         while move_mask != 0 {
             let square_to = BoardHelper::bitscan_forward(move_mask);
             out_moves.push(Move::new(from, square_to, MoveFlag::PromoteKnight));
@@ -240,6 +243,7 @@ impl MoveGenerator {
         moves
     }
 
+    #[inline(always)]
     pub fn get_legal_moves_for_square(board: &ChessBoard, square: i32) -> Vec<Move> {
         Self::get_legal_moves(board).into_iter().filter(|m| {
             m.get_from_idx() == square
@@ -409,12 +413,14 @@ impl MoveGenerator {
     }
 
     // https://www.chessprogramming.org/X-ray_Attacks_(Bitboards)#ModifyingOccupancy
+    #[inline(always)]
     fn xray_rook_attacks(occupied: u64, mut blockers: u64, rook_square: i32) -> u64 {
         let attacks = get_rook_magic(rook_square, blockers);
         blockers &= attacks;
         return attacks ^ get_rook_magic(rook_square, occupied ^ blockers);
     }
 
+    #[inline(always)]
     fn xray_bishop_attacks(occupied: u64, mut blockers: u64, bishop_square: i32) -> u64 {
         let attacks = get_bishop_magic(bishop_square, blockers);
         blockers &= attacks;
@@ -462,9 +468,8 @@ mod tests {
     fn test_chess_board_move_generation_en_passant_vertical_pin() {
         let mut board = ChessBoard::new();
         board.parse_fen("r1bqkbnr/ppp1pppp/8/2Pp4/8/8/PPPKPPPP/RNBQ1BNR w kq d6 0 4");
-        board.make_move_uci("b5c6").expect("en passant captures pinned piece and also resolves the pin so should be allowed")
+        board.make_move_uci("c5d6").expect("en passant captures pinned piece and also resolves the pin so should be allowed")
     }
-
 
     #[test]
     #[should_panic]

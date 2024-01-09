@@ -75,10 +75,12 @@ lazy_static!{
     };
 }
 
+#[inline(always)]
 pub const fn magic_index(magic: u64, blockers: u64, shift: u64) -> usize {
     ((magic.wrapping_mul(blockers)) >> (64 - shift)) as usize
 }
 
+#[inline(always)]
 pub fn get_bishop_magic(square: i32, blockers: u64) -> u64 {
     let magic = BISHOP_MAGICS[square as usize];
     let shift = BISHOP_SHIFTS[square as usize];
@@ -86,6 +88,7 @@ pub fn get_bishop_magic(square: i32, blockers: u64) -> u64 {
     BISHOP_ATTACK_MAP[square as usize][magic_index(magic, blockers & mask, shift)]
 }
 
+#[inline(always)]
 pub fn get_rook_magic(square: i32, blockers: u64) -> u64 {
     let magic = ROOK_MAGICS[square as usize];
     let shift = ROOK_SHIFTS[square as usize];

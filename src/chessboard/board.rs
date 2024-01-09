@@ -108,6 +108,7 @@ impl ChessBoard {
         self.zobrist_hash = 0;
     }
 
+    #[inline(always)]
     pub fn new_game(&mut self) {
         self.clear();
     }
@@ -127,9 +128,12 @@ impl ChessBoard {
         Some(())
     }
 
+    #[inline(always)]
     pub fn get_legal_moves(&self) -> Vec<Move> { 
         MoveGenerator::get_legal_moves(self)
     }
+
+    #[inline(always)]
     pub fn get_legal_moves_for_square(&self, square: i32) -> Vec<Move> { 
         MoveGenerator::get_legal_moves_for_square(self, square)
     }
@@ -385,6 +389,7 @@ impl ChessBoard {
         Some(move_made.board_move)
     }
 
+    #[inline(always)]
     pub fn get_king_square(&self, king_color: PieceColor) -> i32 {
         return BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)].get_bits());
     }
@@ -405,12 +410,20 @@ impl ChessBoard {
         captured
     }
 
-    pub fn get_piece(&self, square: i32) -> Piece {
+    #[inline(always)]
+    pub const fn get_piece(&self, square: i32) -> Piece {
         self.board[square as usize]
     }
 
-    pub fn set_turn(&mut self, turn: PieceColor) { self.turn = turn; }
-    pub fn get_turn(&self) -> PieceColor { self.turn }
+    #[inline(always)]
+    pub fn set_turn(&mut self, turn: PieceColor) { 
+        self.turn = turn; 
+    }
+
+    #[inline(always)]
+    pub const fn get_turn(&self) -> PieceColor { 
+        self.turn 
+    }
 
     #[inline(always)]
     pub fn new() -> Self {
@@ -433,6 +446,7 @@ impl ChessBoard {
         x
     }
 
+    #[inline(always)]
     fn remove_from_bitboards(&mut self, piece: Piece, square: i32) {
         assert!(!piece.is_none());
 
@@ -442,10 +456,12 @@ impl ChessBoard {
         self.zobrist_hash ^= piece.get_hash(square);
     }
 
-    fn get_side_mask(&self, side: PieceColor) -> u64 {
+    #[inline(always)]
+    const fn get_side_mask(&self, side: PieceColor) -> u64 {
         self.side_bitboards[side as usize].get_bits()
     }
 
+    #[inline(always)]
     fn add_to_bitboards(&mut self, piece: Piece, square: i32) {
         // Bitboard
         self.bitboards[piece.get_piece_index()].set_bit(square);

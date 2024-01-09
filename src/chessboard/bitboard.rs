@@ -133,12 +133,12 @@ impl BitBoard {
     }
 
     #[inline(always)]
-    pub fn get_masked(&self, mask: u64) -> u64 {
+    pub const fn get_masked(&self, mask: u64) -> u64 {
         return self.0 & mask;
     }
 
     #[inline(always)]
-    pub fn get_bits(&self) -> u64 {
+    pub const fn get_bits(&self) -> u64 {
         return self.0;
     }
 

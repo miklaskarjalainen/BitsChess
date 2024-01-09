@@ -17,6 +17,7 @@ lazy_static! {
 }
 
 impl Piece {
+    #[inline(always)]
     pub fn get_hash(self, square: i32) -> u64 {
         assert!(!self.is_none());
         return ZOBRIST_KEYS[(square as usize) * 12 + self.get_piece_index()];

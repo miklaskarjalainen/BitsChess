@@ -15,7 +15,8 @@ pub enum Square {
 }
 
 impl Square {
-    pub fn from_u32(f: u32) -> Square {
+    #[inline(always)]
+    pub const fn from_u32(f: u32) -> Square {
         unsafe {
             std::mem::transmute(f & 0b111111)
         }
@@ -31,25 +32,30 @@ impl BoardHelper {
         target_idx
     }
 
-    pub fn file_to_idx(file: char) -> i32 {
+    #[inline(always)]
+    pub const fn file_to_idx(file: char) -> i32 {
         (7u8 - (b'h' - (file.to_ascii_lowercase() as u8))) as i32
     }
 
-    pub fn get_rank(square: i32) -> i32 {
+    #[inline(always)]
+    pub const fn get_rank(square: i32) -> i32 {
         square / CHESSBOARD_WIDTH
     }
 
-    pub fn get_file(square: i32) -> i32 {
+    #[inline(always)]
+    pub const fn get_file(square: i32) -> i32 {
         square % CHESSBOARD_WIDTH
     }
 
     /// ```(file, rank)```
-    pub fn file_and_rank(square: i32 ) -> (i32, i32) {
+    #[inline(always)]
+    pub const fn file_and_rank(square: i32 ) -> (i32, i32) {
         (BoardHelper::get_file(square), BoardHelper::get_rank(square))
     }
 
     /// ```(file, rank)```
-    pub fn square_to_chars(square: i32 ) -> (char, char) {
+    #[inline(always)]
+    pub const fn square_to_chars(square: i32 ) -> (char, char) {
         if square == -1 {
             return ('-', '-');
         }
@@ -60,7 +66,8 @@ impl BoardHelper {
     }
     
     // https://www.chessprogramming.org/BitScan
-    pub fn bitscan_forward(bb: u64) -> i32 {
+    #[inline(always)]
+    pub const fn bitscan_forward(bb: u64) -> i32 {
         const INDEX64: [i32; 64] = [
             0, 47,  1, 56, 48, 27,  2, 60,
             57, 49, 41, 37, 28, 16,  3, 61,
@@ -76,12 +83,14 @@ impl BoardHelper {
         return INDEX64[(((bb ^ (bb-1)).wrapping_mul(DEBRUIJN64)) >> 58) as usize];
     }
 
+    #[inline(always)]
     pub fn pop_rsb(bb: &mut u64) -> i32 {
         let pos = Self::bitscan_forward(*bb);
         *bb &= *bb - 1;
         pos
     }
 
+    #[inline(always)]
     pub fn count_bits(mut b: u64) -> i32 {
         let mut count = 0;
         while b != 0 {
