@@ -61,8 +61,20 @@ impl BoardHelper {
         }
 
         let rank = (b'0' + (Self::get_rank(square) + 1) as u8) as char;
-        let file: char = (b'a' + Self::get_file(square) as u8) as char;
+        let file = (b'a' + Self::get_file(square) as u8) as char;
         (file, rank)
+    }
+
+    /// ```outputs: "e4", "a1"```
+    #[inline(always)]
+    pub fn square_to_string(square: i32 ) -> String {
+        if square == -1 {
+            return String::from("");
+        }
+
+        let rank = (b'0' + (Self::get_rank(square) + 1) as u8) as char;
+        let file = (b'a' + Self::get_file(square) as u8) as char;
+        format!("{}{}", file, rank)
     }
     
     // https://www.chessprogramming.org/BitScan
