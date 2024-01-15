@@ -60,7 +60,7 @@ impl PieceType {
         return (side as usize) * 6 + (*self as usize) - 1
     }
 
-    fn from_char(ch: char) -> PieceType {
+    pub fn from_char(ch: char) -> PieceType {
         match ch.to_ascii_lowercase() {
             'p' => { PieceType::Pawn }
             'n' => { PieceType::Knight }
@@ -72,7 +72,7 @@ impl PieceType {
         }
     }
 
-    fn to_char(&self) -> char {
+    pub fn to_char(&self) -> char {
         match self {
             PieceType::Pawn => { 'p' }
             PieceType::Knight => { 'n' }
