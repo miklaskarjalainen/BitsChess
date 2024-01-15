@@ -96,7 +96,7 @@ impl BoardHelper {
     }
 
     #[inline(always)]
-    pub fn pop_rsb(bb: &mut u64) -> i32 {
+    pub fn pop_lsb(bb: &mut u64) -> i32 {
         let pos = Self::bitscan_forward(*bb);
         *bb &= *bb - 1;
         pos
@@ -107,7 +107,7 @@ impl BoardHelper {
         let mut count = 0;
         while b != 0 {
             count += 1;
-            Self::pop_rsb(&mut b);
+            Self::pop_lsb(&mut b);
         }
         count
     }

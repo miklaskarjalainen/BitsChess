@@ -47,7 +47,7 @@ impl MoveGenerator {
     #[inline(always)]
     fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>, is_quiet: bool) {
         while move_mask != 0 {
-            let square_to = BoardHelper::pop_rsb(&mut move_mask);
+            let square_to = BoardHelper::pop_lsb(&mut move_mask);
             if is_quiet {
                 out_moves.push(Move::new(from, square_to, MoveFlag::PromoteKnight));
                 out_moves.push(Move::new(from, square_to, MoveFlag::PromoteBishop));
@@ -129,7 +129,7 @@ impl MoveGenerator {
         // Knights
         let mut knights = board.bitboards[PieceType::Knight.get_side_index(board.turn)].get_bits();
         while knights != 0 {
-            let knight_square = BoardHelper::pop_rsb(&mut knights);
+            let knight_square = BoardHelper::pop_lsb(&mut knights);
             // Pinned knight cannot move
             if pin_mask & (1 << knight_square) != 0 { continue; } 
 
@@ -140,7 +140,7 @@ impl MoveGenerator {
         // Bishop
         let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(board.turn)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn)].get_bits();
         while bishops != 0 {
-            let bishop_square = BoardHelper::pop_rsb(&mut bishops);
+            let bishop_square = BoardHelper::pop_lsb(&mut bishops);
             let bishop_attacks = get_bishop_magic(bishop_square, all_pieces) & enemy_or_empty & check_mask & move_filter_mask;
             if pin_mask & (1 << bishop_square) != 0 {
                 // For Bishops the pin cannot be by horizontal/vertical moving piece for it be able to move  
@@ -155,7 +155,7 @@ impl MoveGenerator {
         // Rook
         let mut rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn)].get_bits();
         while rooks != 0 {
-            let rook_square = BoardHelper::pop_rsb(&mut rooks);
+            let rook_square = BoardHelper::pop_lsb(&mut rooks);
             let rook_attacks = get_rook_magic(rook_square, all_pieces) & enemy_or_empty & check_mask & move_filter_mask;
             if pin_mask & (1 << rook_square) != 0 {
                 // For rooks the pin cannot be by diagonal moving piece for it be able to move  
@@ -170,7 +170,7 @@ impl MoveGenerator {
         // Pawns
         let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(board.turn)].get_bits();
         while pawns != 0 {
-            let pawn_square = BoardHelper::pop_rsb(&mut pawns);
+            let pawn_square = BoardHelper::pop_lsb(&mut pawns);
 
             let mut promotable_moves = 0u64;
             let current_rank = BoardHelper::get_rank(pawn_square);
@@ -309,7 +309,7 @@ impl MoveGenerator {
         {
             let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(opponent)].get_bits();
             while pawns != 0 {
-                let pawn_square = BoardHelper::pop_rsb(&mut pawns);
+                let pawn_square = BoardHelper::pop_lsb(&mut pawns);
                 
                 let attack = PAWN_ATTACKS[opponent as usize][pawn_square as usize];
                 if (attack & king_mask) != 0 {
@@ -324,7 +324,7 @@ impl MoveGenerator {
         {
             let mut knights = board.bitboards[PieceType::Knight.get_side_index(opponent)].get_bits();
             while knights != 0 {
-                let knight_square = BoardHelper::pop_rsb(&mut knights);
+                let knight_square = BoardHelper::pop_lsb(&mut knights);
                 
                 let attack = KNIGHT_ATTACKS[knight_square as usize];
                 if (attack & king_mask) != 0 {
@@ -339,7 +339,7 @@ impl MoveGenerator {
         {
             let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
             while bishops != 0 {
-                let bishop_square = BoardHelper::pop_rsb(&mut bishops);
+                let bishop_square = BoardHelper::pop_lsb(&mut bishops);
                 
                 let attack = get_bishop_magic(bishop_square, blockers);
                 if (attack & king_mask) != 0 {
@@ -355,7 +355,7 @@ impl MoveGenerator {
         {
             let mut rooks = board.bitboards[PieceType::Rook.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
             while rooks != 0 {
-                let rook_square = BoardHelper::pop_rsb(&mut rooks);
+                let rook_square = BoardHelper::pop_lsb(&mut rooks);
                 
                 let attack = get_rook_magic(rook_square, blockers);
                 if (attack & king_mask) != 0 {
@@ -383,7 +383,7 @@ impl MoveGenerator {
         {
             let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(enemy_color)].get_bits();
             while pawns != 0 {
-                let pawn_square = BoardHelper::pop_rsb(&mut pawns);
+                let pawn_square = BoardHelper::pop_lsb(&mut pawns);
                 attacks |= bitboard::PAWN_ATTACKS[enemy_color as usize][pawn_square as usize];
             }
         }
@@ -391,7 +391,7 @@ impl MoveGenerator {
         {
             let mut knights = board.bitboards[PieceType::Knight.get_side_index(enemy_color)].get_bits();
             while knights != 0 {
-                let knight_square = BoardHelper::pop_rsb(&mut knights);
+                let knight_square = BoardHelper::pop_lsb(&mut knights);
                 attacks |= bitboard::KNIGHT_ATTACKS[knight_square as usize];
             }
         }
@@ -399,7 +399,7 @@ impl MoveGenerator {
         {
             let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(enemy_color)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(enemy_color)].get_bits();
             while bishops != 0 {
-                let bishop_square = BoardHelper::pop_rsb(&mut bishops);
+                let bishop_square = BoardHelper::pop_lsb(&mut bishops);
                 attacks |= get_bishop_magic(bishop_square, all_pieces);
             }
         }
@@ -407,7 +407,7 @@ impl MoveGenerator {
         {
             let mut rooks = board.bitboards[PieceType::Rook.get_side_index(enemy_color)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(enemy_color)].get_bits();
             while rooks != 0 {
-                let rook_square = BoardHelper::pop_rsb(&mut rooks);
+                let rook_square = BoardHelper::pop_lsb(&mut rooks);
                 attacks |= get_rook_magic(rook_square, all_pieces);
             }
         }
