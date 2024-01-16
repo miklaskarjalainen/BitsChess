@@ -15,4 +15,4 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
-            - run:  cargo test -- --include-ignored --release --all-features
+            - run: cargo test --release --all-features -- --include-ignored
