@@ -59,7 +59,7 @@ For the cli commands have look at main.rs they are all in there. They all are su
 ## Testing
 The repository contains unit tests which can be ran with the command:  
 ```bash
-cargo test # add '--release' for faster runs
+cargo test # add '--release' for optimized builds
 ```
 
 ## Sources
