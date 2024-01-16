@@ -20,6 +20,10 @@ fn main() {
         else if &line == "board" {
             println!("{}", board);
         }
+        else if &line == "pgn" {
+            println!("{:?}", board.to_pgn());
+            println!("{}", board.to_pgn().to_string());
+        }
         else if &line == "undo" {
             let m = board.unmake_move();
             if let Some(made_move) = m {

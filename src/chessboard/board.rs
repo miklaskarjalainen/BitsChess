@@ -2,6 +2,7 @@ pub mod fen;
 pub mod magics;
 pub mod move_generation;
 pub mod perft;
+pub mod pgn;
 pub mod repetition_table;
 pub mod zobrist;
 
@@ -340,7 +341,6 @@ impl ChessBoard {
             return true;
         }
 
-
         if let Some(reps) = self.repetitions.get_repetitions(self.zobrist_hash) {
             // 3-fold repetition
             if reps >= 3u8 {
@@ -348,6 +348,10 @@ impl ChessBoard {
             }
         }
         false
+    }
+
+    pub fn is_check_mate(&self) -> bool {
+        self.is_king_in_check(self.turn) && self.get_legal_moves().len() == 0
     }
 
     pub fn unmake_move(&mut self) -> Option<Move> {
