@@ -1,12 +1,5 @@
-use super::BoardHelper;
-use super::ChessBoard;
-use super::PieceType;
-use super::Move;
-use super::MoveFlag;
-use super::Square;
-use super::ReversibleMove;
+use super::{ BoardHelper, ChessBoard, PieceType, MoveFlag, ReversibleMove};
 use super::fen::STARTPOS_FEN;
-use core::panic;
 use std::collections::HashMap;
 
 // https://en.wikipedia.org/wiki/Portable_Game_Notation
@@ -54,17 +47,17 @@ impl ToString for PGN {
 impl PGN {
     /// Replaces the tag if already set
     #[inline(always)]
-    fn set_tag(&mut self, tag: impl Into<String>, value: impl Into<String>) {
+    pub fn set_tag(&mut self, tag: impl Into<String>, value: impl Into<String>) {
         self.tags.insert(tag.into(), value.into());
     }
 
     #[inline(always)]
-    fn get_tag(&mut self, tag: impl AsRef<String>) -> Option<&String> {
+    pub fn get_tag(&mut self, tag: impl AsRef<String>) -> Option<&String> {
         self.tags.get(tag.as_ref())
     }
 
     #[inline(always)]
-    fn del_tag(&mut self, tag: impl AsRef<String>) -> bool {
+    pub fn del_tag(&mut self, tag: impl AsRef<String>) -> bool {
         self.tags.remove_entry(tag.as_ref()).is_some()
     }
 }
@@ -85,9 +78,9 @@ impl ChessBoard {
     /// https://en.wikipedia.org/wiki/Algebraic_notation_(chess)#Disambiguating_moves
     fn pgn_needs_disambiguating(&self, m: ReversibleMove) -> (bool, bool) {
         use super::magics::{get_bishop_magic, get_rook_magic};
-        use super::super::bitboard::{PAWN_ATTACKS, KNIGHT_ATTACKS, KING_ATTACKS};
+        use super::super::bitboard::KNIGHT_ATTACKS;
 
-        let mut attackers = 0u64;
+        let mut attackers;
 
         let turn = self.get_turn();
         let own_pieces = self.get_side_mask(turn);
@@ -225,7 +218,6 @@ impl ChessBoard {
         while board.move_history.len() > 0 {
             let reversible_move = board.move_history.last().unwrap().clone();
             let check_or_mate = if board.is_check_mate() { "#" } else if board.is_king_in_check(board.turn) { "+" } else { "" };
-            
             board.unmake_move().unwrap();
 
             let move_pgn = format!("{}{}", board.get_move_pgn(reversible_move), check_or_mate);
