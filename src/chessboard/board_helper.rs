@@ -27,14 +27,33 @@ impl BoardHelper {
     // "a1" -> 0, "B2" -> 9
     pub fn text_to_square(uci_cmd: &str) -> i32 {
         let file = Self::file_to_idx(uci_cmd.chars().nth(0).unwrap());
-        let rank = uci_cmd.chars().nth(1).unwrap().to_digit(10).unwrap() as i32 - 1;
-        let target_idx = rank * CHESSBOARD_WIDTH + file;
-        target_idx
+        let rank = Self::rank_to_idx(uci_cmd.chars().nth(1).unwrap());
+        Self::file_rank_to_idx(file, rank)
+    }
+
+    // 'a','1' -> 0, 'B', '2' -> 9
+    pub const fn chars_to_square(file: char, rank: char) -> i32 {
+        let file = Self::file_to_idx(file);
+        let rank = Self::rank_to_idx(rank);
+        Self::file_rank_to_idx(file, rank)
     }
 
     #[inline(always)]
     pub const fn file_to_idx(file: char) -> i32 {
         (7u8 - (b'h' - (file.to_ascii_lowercase() as u8))) as i32
+    }
+
+    #[inline(always)]
+    pub const fn rank_to_idx(rank: char) -> i32 {
+        if let Some(num) = rank.to_digit(10) {
+            return (num as i32) - 1;
+        }
+        -1
+    }
+
+    #[inline(always)]
+    pub const fn file_rank_to_idx(file: i32, rank: i32) -> i32 {
+        rank * CHESSBOARD_WIDTH + file
     }
 
     #[inline(always)]
@@ -67,7 +86,7 @@ impl BoardHelper {
 
     /// ```outputs: "e4", "a1"```
     #[inline(always)]
-    pub fn square_to_string(square: i32 ) -> String {
+    pub fn square_to_string(square: i32) -> String {
         if square == -1 {
             return String::from("");
         }
@@ -119,8 +138,6 @@ impl BoardHelper {
         }
         
         let chars: Vec<char> = uci_move.chars().collect();
-
-
         if chars[0] < 'a' || chars[0] > 'h' {
             return false;
         }
@@ -159,6 +176,18 @@ mod tests {
         assert_eq!(BoardHelper::text_to_square("h1"), Square::H1 as i32);
         assert_eq!(BoardHelper::text_to_square("h7"), Square::H7 as i32);
     }
+
+    #[test]
+    fn test_board_helper_square_to_string() {
+        assert_eq!(BoardHelper::square_to_string(Square::A8 as i32), "a8");
+        assert_eq!(BoardHelper::square_to_string(Square::B7 as i32), "b7");
+        assert_eq!(BoardHelper::square_to_string(Square::C6 as i32), "c6");
+        assert_eq!(BoardHelper::square_to_string(Square::D5 as i32), "d5");
+        assert_eq!(BoardHelper::square_to_string(Square::E4 as i32), "e4");
+        assert_eq!(BoardHelper::square_to_string(Square::F3 as i32), "f3");
+        assert_eq!(BoardHelper::square_to_string(Square::G2 as i32), "g2");
+        assert_eq!(BoardHelper::square_to_string(Square::H1 as i32), "h1");
+    }
     
     #[test]
     fn test_board_helper_file_to_idx() {
@@ -181,6 +210,30 @@ mod tests {
     }
 
     #[test]
+    fn test_board_helper_file_rank_to_idx() {
+        assert_eq!(BoardHelper::file_rank_to_idx(0, 7), Square::A8 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(1, 6), Square::B7 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(2, 5), Square::C6 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(3, 4), Square::D5 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(4, 3), Square::E4 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(5, 2), Square::F3 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(6, 1), Square::G2 as i32);
+        assert_eq!(BoardHelper::file_rank_to_idx(7, 0), Square::H1 as i32);
+    }
+
+    #[test]
+    fn test_board_helper_rank_to_idx() {
+        assert_eq!(BoardHelper::rank_to_idx('1'), 0);
+        assert_eq!(BoardHelper::rank_to_idx('2'), 1);
+        assert_eq!(BoardHelper::rank_to_idx('3'), 2);
+        assert_eq!(BoardHelper::rank_to_idx('4'), 3);
+        assert_eq!(BoardHelper::rank_to_idx('5'), 4);
+        assert_eq!(BoardHelper::rank_to_idx('6'), 5);
+        assert_eq!(BoardHelper::rank_to_idx('7'), 6);
+        assert_eq!(BoardHelper::rank_to_idx('8'), 7);
+    }
+
+    #[test]
     fn test_board_helper_get_rank() {
         assert_eq!(BoardHelper::get_rank(Square::A1 as i32), 0);
         assert_eq!(BoardHelper::get_rank(Square::B2 as i32), 1);
@@ -194,14 +247,14 @@ mod tests {
 
     #[test]
     fn test_board_helper_get_file() {
-        assert_eq!(BoardHelper::get_rank(Square::A1 as i32), 0);
-        assert_eq!(BoardHelper::get_rank(Square::B2 as i32), 1);
-        assert_eq!(BoardHelper::get_rank(Square::C3 as i32), 2);
-        assert_eq!(BoardHelper::get_rank(Square::D4 as i32), 3);
-        assert_eq!(BoardHelper::get_rank(Square::E5 as i32), 4);
-        assert_eq!(BoardHelper::get_rank(Square::F6 as i32), 5);
-        assert_eq!(BoardHelper::get_rank(Square::G7 as i32), 6);
-        assert_eq!(BoardHelper::get_rank(Square::H8 as i32), 7);
+        assert_eq!(BoardHelper::get_file(Square::A1 as i32), 0);
+        assert_eq!(BoardHelper::get_file(Square::B2 as i32), 1);
+        assert_eq!(BoardHelper::get_file(Square::C3 as i32), 2);
+        assert_eq!(BoardHelper::get_file(Square::D4 as i32), 3);
+        assert_eq!(BoardHelper::get_file(Square::E5 as i32), 4);
+        assert_eq!(BoardHelper::get_file(Square::F6 as i32), 5);
+        assert_eq!(BoardHelper::get_file(Square::G7 as i32), 6);
+        assert_eq!(BoardHelper::get_file(Square::H8 as i32), 7);
     }
 
     #[test]
@@ -226,5 +279,17 @@ mod tests {
         assert_eq!(BoardHelper::square_to_chars(Square::F3 as i32), ('f', '3'));
         assert_eq!(BoardHelper::square_to_chars(Square::G2 as i32), ('g', '2'));
         assert_eq!(BoardHelper::square_to_chars(Square::H1 as i32), ('h', '1'));
+    }
+
+    #[test]
+    fn test_board_helper_chars_to_square() {
+        assert_eq!(BoardHelper::chars_to_square('A', '8'), Square::A8 as i32);
+        assert_eq!(BoardHelper::chars_to_square('b', '7'), Square::B7 as i32);
+        assert_eq!(BoardHelper::chars_to_square('C', '6'), Square::C6 as i32);
+        assert_eq!(BoardHelper::chars_to_square('d', '5'), Square::D5 as i32);
+        assert_eq!(BoardHelper::chars_to_square('E', '4'), Square::E4 as i32);
+        assert_eq!(BoardHelper::chars_to_square('f', '3'), Square::F3 as i32);
+        assert_eq!(BoardHelper::chars_to_square('G', '2'), Square::G2 as i32);
+        assert_eq!(BoardHelper::chars_to_square('h', '1'), Square::H1 as i32);
     }
 }
