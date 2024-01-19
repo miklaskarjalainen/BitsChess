@@ -217,7 +217,7 @@ impl ChessBoard {
 
             // If a pawn made the capture then file is always needed
             PieceType::Pawn => {
-                return (false, !m.captured.is_none());
+                return (!m.captured.is_none(), false);
             }
 
             _ => { return (false, false); }
@@ -232,38 +232,25 @@ impl ChessBoard {
         if overlapping_pieces.len() < 1 { return (false, false); }
 
 
-        let mut disambiguate_rank = false;
-        let mut disambiguate_file = false;
+        let mut add_file = false;
+        let mut add_rank = false;
         for x in &overlapping_pieces {
             for y in &overlapping_pieces {
                 if x == y { continue; }
-
-                if disambiguate_file {
-                    if BoardHelper::get_rank(*x) == BoardHelper::get_rank(*y) {
-                        disambiguate_rank = true;
-                        break;
-                    }
-                }
-                else if disambiguate_rank {
-                    if BoardHelper::get_file(*x) == BoardHelper::get_file(*y) {
-                        disambiguate_file = true;
-                        break;
-                    }
-                }
-
                 if BoardHelper::get_file(*x) == BoardHelper::get_file(*y) {
-                    disambiguate_file = true;
+                    add_rank = true;
                 }
                 else if BoardHelper::get_rank(*x) == BoardHelper::get_rank(*y) {
-                    disambiguate_rank = true;
+                    add_file = true;
                 }
             }
         }
 
-        //
-        disambiguate_rank = disambiguate_rank || (!disambiguate_file && !disambiguate_rank);
+        // by default add file if not in the same file nor rank
+        // but can move into same location (happens with knights)
+        add_file = add_file || (!add_file && !add_rank);
 
-        (disambiguate_file, disambiguate_rank)
+        (add_file, add_rank)
     }
 
     fn get_move_san(&self, m: ReversibleMove) -> String {
@@ -288,10 +275,10 @@ impl ChessBoard {
         let mut dis_amb = "".to_string();
         let (dis_file, dis_rank) = self.pgn_needs_disambiguating(m);
         let (file, rank) = BoardHelper::square_to_chars(m.board_move.get_from_idx());
-        if dis_rank {
+        if dis_file {
             dis_amb.push(file);
         }
-        if dis_file {
+        if dis_rank {
             dis_amb.push(rank);
         }
 
