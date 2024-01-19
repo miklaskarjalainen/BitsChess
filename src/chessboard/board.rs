@@ -121,13 +121,24 @@ impl ChessBoard {
         let legal_moves = self.get_legal_moves_for_square(from);
         let mut filtered_moves: Vec<Move> = legal_moves.into_iter().filter(|m| { return m.to_uci() == uci}).collect();
         if filtered_moves.len() == 0 {
-            println!("illegal move! :^(");
             return None;
         }
         let m = filtered_moves.pop().expect("?");
         self.make_move(m, false);
         
         Some(())
+    }
+
+    /// Before doing the move, checks legality.
+    pub fn make_move_checked(&mut self, chess_move: Move) -> bool {
+        let legal_moves = self.get_legal_moves_for_square(chess_move.get_from_idx());
+        let mut filtered_moves: Vec<Move> = legal_moves.into_iter().filter(|m| { return m == &chess_move }).collect();
+        if filtered_moves.len() == 0 {
+            return false;
+        }
+        let m = filtered_moves.pop().expect("?");
+        self.make_move(m, false);
+        true
     }
 
     #[inline(always)]
