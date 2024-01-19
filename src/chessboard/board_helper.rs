@@ -39,12 +39,12 @@ impl BoardHelper {
 
     #[inline(always)]
     pub const fn get_rank(square: i32) -> i32 {
-        square / CHESSBOARD_WIDTH
+        square >> 3
     }
 
     #[inline(always)]
     pub const fn get_file(square: i32) -> i32 {
-        square % CHESSBOARD_WIDTH
+        square & 7
     }
 
     /// ```(file, rank)```
