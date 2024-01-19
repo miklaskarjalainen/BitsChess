@@ -1,6 +1,11 @@
-use super::{ BoardHelper, ChessBoard, PieceType, MoveFlag, ReversibleMove};
+use super::{ BoardHelper, ChessBoard, Piece, PieceType, Move, MoveFlag, ReversibleMove, Square };
 use super::fen::STARTPOS_FEN;
 use std::collections::HashMap;
+
+#[derive(Debug, PartialEq)]
+pub enum PGNParserError {
+    SyntaxError,
+}
 
 // https://en.wikipedia.org/wiki/Portable_Game_Notation
 #[derive(Debug)]
@@ -45,6 +50,13 @@ impl ToString for PGN {
 }
 
 impl PGN {
+    pub fn new() -> Self {
+        Self {
+            tags: HashMap::new(),
+            moves: vec![]
+        }
+    }
+
     /// Replaces the tag if already set
     #[inline(always)]
     pub fn set_tag(&mut self, tag: impl Into<String>, value: impl Into<String>) {
@@ -60,15 +72,112 @@ impl PGN {
     pub fn del_tag(&mut self, tag: impl AsRef<String>) -> bool {
         self.tags.remove_entry(tag.as_ref()).is_some()
     }
-}
 
+    pub fn parse_string(&mut self, contents: String) {
+        self.tags = Self::parse_tags(&contents).expect("parse error");
+        self.moves = Self::parse_moves(&contents).expect("parse error");
+    }
 
-impl PGN {
-    pub fn new() -> Self {
-        Self {
-            tags: HashMap::new(),
-            moves: vec![]
+    pub fn parse_tags(contents: &String) -> Result<HashMap<String, String>, PGNParserError> {
+        /*
+        What we're trying to parse:
+        [Event "F/S Return Match"]
+        [Site "Belgrade, Serbia JUG"]
+        [Date "1992.11.04"]
+        [Round "29"]
+        [White "Fischer, Robert J."]
+        [Black "Spassky, Boris V."]
+        [Result "1/2-1/2"]
+
+        (stop here ->) 1. e4 e5 ...
+        */
+        let mut tags = HashMap::new();
+
+        let mut is_literal = false;
+        let mut is_in_tag = false;
+        
+        let mut key = String::from("");
+        let mut working_word = String::from("");
+
+        for c in contents.chars() {
+            if c == '[' {
+                is_in_tag = true;
+                continue;
+            }
+            else if c == ']' {
+                is_in_tag = false;
+                continue;
+            }
+
+            if !is_in_tag && !c.is_whitespace() {
+                break;
+            }
+
+            // parsing key
+            if key.is_empty() {
+                if !c.is_whitespace() {
+                    working_word.push(c);
+                    continue;
+                }
+                
+                if !working_word.is_empty() {
+                    key = working_word.clone();
+                    working_word.clear();
+                }
+                continue;
+            }
+            
+            // parsing value
+            match c {
+                '"' => {
+                    if is_literal {
+                        tags.insert(key.clone(), working_word.clone());
+                        working_word.clear();
+                        key.clear();
+                    }
+                    
+                    is_literal = !is_literal;
+                    continue;
+                }
+
+                _ => {
+                    if c.is_whitespace() && !is_literal {
+                        continue;
+                    }
+                    working_word.push(c);
+                }
+            }
+
         }
+
+        Ok(tags)
+    }
+
+    pub fn parse_moves(contents: &String) -> Result<Vec<String>, PGNParserError> {
+        /*
+        What we're trying to parse:
+        1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7
+        11. c4 c6 12. cxb5 axb5 13. Nc3 Bb7 14. Bg5 b4 15. Nb1 h6 16. Bh4 c5 17. dxe5
+        Nxe4 18. Bxe7 Qxe7 19. exd6 Qf6 20. Nbd2 Nxd6 21. Nc4 Nxc4 22. Bxc4 Nb6
+        23. Ne5 Rae8 24. Bxf7+ Rxf7 25. Nxf7 Rxe1+ 26. Qxe1 Kxf7 27. Qe3 Qg5 28. Qxg5
+        hxg5 29. b3 Ke6 30. a3 Kd6 31. axb4 cxb4 32. Ra5 Nd5 33. f3 Bc8 34. Kf2 Bf5
+        35. Ra7 g6 36. Ra6+ Kc5 37. Ke1 Nf4 38. g3 Nxh3 39. Kd2 Kb5 40. Rd6 Kc5 41. Ra6
+        Nf2 42. g4 Bd3 43. Re6 1/2-1/2
+        */
+
+        let pos = contents.rfind(']').unwrap_or(0usize);
+        let unescape = &contents[(pos+1)..contents.len()]
+            .replace('\"', "")
+            .replace('\n', " ");
+
+        Ok(
+            unescape.split(' ')
+            .collect::<Vec<&str>>()
+            .into_iter()
+            .filter(|x| { !x.is_empty() && !x.contains('.') })
+            .map(|x| { return String::from(x)})
+            .collect::<Vec<String>>()
+        )
     }
 }
 
@@ -152,7 +261,7 @@ impl ChessBoard {
         (disambiguate_file, disambiguate_rank)
     }
 
-    fn get_move_pgn(&self, m: ReversibleMove) -> String {
+    fn get_move_san(&self, m: ReversibleMove) -> String {
         // Castling
         if m.board_move.get_flag() == MoveFlag::Castle {
             let to = m.board_move.get_to_idx();
@@ -220,7 +329,7 @@ impl ChessBoard {
             let check_or_mate = if board.is_check_mate() { "#" } else if board.is_king_in_check(board.turn) { "+" } else { "" };
             board.unmake_move().unwrap();
 
-            let move_pgn = format!("{}{}", board.get_move_pgn(reversible_move), check_or_mate);
+            let move_pgn = format!("{}{}", board.get_move_san(reversible_move), check_or_mate);
             pgn.moves.push(move_pgn);
         }
         pgn.moves.reverse();
@@ -234,8 +343,148 @@ impl ChessBoard {
         pgn
     }
 
-}
+    /// Tags are not saved!
+    pub fn parse_pgn(&mut self, pgn_str: String) {
+        let mut pgn = PGN::new();
+        pgn.parse_string(pgn_str);
 
+        println!("parsed moves {:?}", pgn.moves);
+
+        for pgn_m in &pgn.moves {
+            if let Some(m) = self.make_move_pgn(pgn_m) {
+                println!("executed '{}'->'{}'", pgn_m, m.to_uci());
+            }
+            else {
+                println!("couldn't execute '{}'", pgn_m);
+                break;
+            }
+        }
+    }
+
+    /// Gets a LEGAL move from a PGN string
+    pub fn get_move_pgn(&mut self, pgn: &str) -> Option<Move> {
+        // PGN move examples: 
+        // e4      (A pawn moved to 'e4')
+        // Ng1     (A Knight moved to 'g1')
+        // Qe2xe4+ (Queen moved from e2 and captured a piece on e4 whilst putting the opponent's king in check)
+        // exd8=Q# (A pawn moved from e file to d8, captured a piece, promoted to a Queen and check mated the opponent).
+
+        if pgn.len() < 2 {
+            return None;
+        }
+        
+        // The objective here is to get the destination square, which at the end of the pgn (before the flags).
+        // So removing the flags we such "#", "=Q", "=N", "+" we guarantee that the destination square is at the end.
+        // "Qe2xe4+" -> "Qe2e4"
+        let flagless = pgn
+        .replace("#", "")  // check make
+        .replace("+", "")  // check
+        .replace("=Q", "") // promote queen
+        .replace("=R", "") // promote rook
+        .replace("=B", "") // promote bishop
+        .replace("=N", "") // promote knight
+        .replace("x", "");  // capture
+
+        let moves = self.get_legal_moves().into_iter();
+
+        // first if check if it's castle
+        if flagless == "O-O" || flagless == "0-0" {
+            return moves.filter(|m| {
+                m.get_to_idx() == Square::G1 as i32 || m.get_to_idx() == Square::G8 as i32
+            }).next();
+        }
+        else if flagless == "O-O-O" || flagless == "0-0-0" {
+            return moves.filter(|m| {
+                m.get_to_idx() == Square::C1 as i32 || m.get_to_idx() == Square::C8 as i32
+            }).next();
+        }
+
+        // extracting the destination square "Qe2e4" -> "4e2eQ" -> ('4', 'e') -> 28
+        let mut flagless_iter = flagless.chars().rev();
+        let to_square: i32 = {
+            let rank_to_char = flagless_iter.next().unwrap();
+            let file_to_char = flagless_iter.next().unwrap();
+            BoardHelper::chars_to_square(file_to_char, rank_to_char)
+        };
+        
+        // if the first char is upper like in "Qe2" that means that a queen moved to e2. If there's no uppercase letter it means that a pawn moved.
+        let moving_piece = {
+            let piece_char = pgn.chars().next().unwrap();
+            if piece_char.is_uppercase() { PieceType::from_char(piece_char) } else { PieceType::Pawn }
+        };
+
+        // We want get additional information about the file and rank which the piece is moving from if provided.
+        // "Qe2xe8" -> "e2", "axb7" -> "a"
+        let from_info = {
+            let skip_first = if moving_piece != PieceType::Pawn { 1 } else { 0 }; // remove first if moving piece is not a pawn
+            &flagless[skip_first..flagless.len()-2]// remove last 2 (destination square)
+        };
+        
+        let mut file_from = -1;
+        let mut rank_from = -1;
+        for c in from_info.chars() {
+            if c >= 'a' && c <= 'h' {
+                file_from = BoardHelper::file_to_idx(c);
+            }
+            else if c >= '1' && c <= '8' {
+                rank_from = BoardHelper::rank_to_idx(c);
+            }
+        }
+        let promotion = {
+            if pgn.contains("=Q") {
+                MoveFlag::PromoteQueen
+            }
+            else if pgn.contains("=R") {
+                MoveFlag::PromoteRook
+            }
+            else if pgn.contains("=B") {
+                MoveFlag::PromoteBishop
+            }
+            else if pgn.contains("=N") {
+                MoveFlag::PromoteKnight
+            }
+            else {
+                MoveFlag::None
+            }
+        };
+
+        let mut result: Vec<Move> = moves.filter(|m| {
+            if m.get_to_idx() != to_square {
+                return false;
+            }
+            
+            // Now let's check if the move meets our conditions
+            let mut filter = true;
+            filter = filter && self.get_piece(m.get_from_idx()).get_piece_type() == moving_piece;
+            if file_from != -1 {
+                filter = filter && BoardHelper::get_file(m.get_from_idx()) == file_from;
+            }
+            if rank_from != -1 {
+                filter = filter && BoardHelper::get_rank(m.get_from_idx()) == rank_from;
+            }
+            if promotion != MoveFlag::None {
+                filter = filter && m.get_flag() == promotion;
+            }
+        
+            filter
+        }).collect();
+
+        // There SHOULD only be 1 move which matches the given conditions.
+        if result.len() == 1 {
+            return result.pop();
+        }
+        None
+    }
+
+    /// Returns the made move, only does legal moves
+    pub fn make_move_pgn(&mut self, pgn: &str) -> Option<Move> {
+        let m = self.get_move_pgn(pgn);
+        if let Some(chess_move) = m {
+            self.make_move(chess_move, false);
+        }
+        m
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -287,5 +536,24 @@ mod tests {
         assert_eq!(pgn.moves.pop(), Some(String::from("Qh4e1"))); 
         assert_eq!(pgn.moves.pop(), Some(String::from("Rdf8")));
         assert_eq!(pgn.moves.pop(), Some(String::from("R1a3")));
+    }
+
+    #[test]
+    fn test_pgn_parse_moves_simple() {
+        const FISCHER_V_SPASSKY: &str = "
+        1. e4 e5 2. Nf3 Nc6 3. Bb5 a6
+        4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7
+        11. c4 c6 12. cxb5 axb5 13. Nc3 Bb7 14. Bg5 b4 15. Nb1 h6 16. Bh4 c5 17. dxe5
+        Nxe4 18. Bxe7 Qxe7 19. exd6 Qf6 20. Nbd2 Nxd6 21. Nc4 Nxc4 22. Bxc4 Nb6
+        23. Ne5 Rae8 24. Bxf7+ Rxf7 25. Nxf7 Rxe1+ 26. Qxe1 Kxf7 27. Qe3 Qg5 28. Qxg5
+        hxg5 29. b3 Ke6 30. a3 Kd6 31. axb4 cxb4 32. Ra5 Nd5 33. f3 Bc8 34. Kf2 Bf5
+        35. Ra7 g6 36. Ra6+ Kc5 37. Ke1 Nf4 38. g3 Nxh3 39. Kd2 Kb5 40. Rd6 Kc5 41. Ra6
+        Nf2 42. g4 Bd3 43. Re6
+        ";
+
+        let mut board = ChessBoard::new();
+        board.parse_fen(STARTPOS_FEN).unwrap();
+        board.parse_pgn(FISCHER_V_SPASSKY.into());
+        assert_eq!(board.to_fen(), "8/8/4R1p1/2k3p1/1p4P1/1P1b1P2/3K1n2/8 b - - 2 43");
     }
 }
