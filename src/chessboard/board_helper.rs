@@ -170,11 +170,11 @@ mod tests {
     #[test]
     fn test_board_helper_text_to_square() {
         assert_eq!(BoardHelper::text_to_square("a1"), Square::A1 as i32);
-        assert_eq!(BoardHelper::text_to_square("a4"), Square::A4 as i32);
+        assert_eq!(BoardHelper::text_to_square("A4"), Square::A4 as i32);
         assert_eq!(BoardHelper::text_to_square("h5"), Square::H5 as i32);
-        assert_eq!(BoardHelper::text_to_square("e4"), Square::E4 as i32);
+        assert_eq!(BoardHelper::text_to_square("E4"), Square::E4 as i32);
         assert_eq!(BoardHelper::text_to_square("h1"), Square::H1 as i32);
-        assert_eq!(BoardHelper::text_to_square("h7"), Square::H7 as i32);
+        assert_eq!(BoardHelper::text_to_square("H7"), Square::H7 as i32);
     }
 
     #[test]
@@ -235,26 +235,26 @@ mod tests {
 
     #[test]
     fn test_board_helper_get_rank() {
-        assert_eq!(BoardHelper::get_rank(Square::A1 as i32), 0);
-        assert_eq!(BoardHelper::get_rank(Square::B2 as i32), 1);
-        assert_eq!(BoardHelper::get_rank(Square::C3 as i32), 2);
-        assert_eq!(BoardHelper::get_rank(Square::D4 as i32), 3);
-        assert_eq!(BoardHelper::get_rank(Square::E5 as i32), 4);
-        assert_eq!(BoardHelper::get_rank(Square::F6 as i32), 5);
-        assert_eq!(BoardHelper::get_rank(Square::G7 as i32), 6);
-        assert_eq!(BoardHelper::get_rank(Square::H8 as i32), 7);
+        assert_eq!(BoardHelper::get_rank(Square::H1 as i32), 0);
+        assert_eq!(BoardHelper::get_rank(Square::G2 as i32), 1);
+        assert_eq!(BoardHelper::get_rank(Square::F3 as i32), 2);
+        assert_eq!(BoardHelper::get_rank(Square::E4 as i32), 3);
+        assert_eq!(BoardHelper::get_rank(Square::D5 as i32), 4);
+        assert_eq!(BoardHelper::get_rank(Square::C6 as i32), 5);
+        assert_eq!(BoardHelper::get_rank(Square::B7 as i32), 6);
+        assert_eq!(BoardHelper::get_rank(Square::A8 as i32), 7);
     }
 
     #[test]
     fn test_board_helper_get_file() {
-        assert_eq!(BoardHelper::get_file(Square::A1 as i32), 0);
-        assert_eq!(BoardHelper::get_file(Square::B2 as i32), 1);
-        assert_eq!(BoardHelper::get_file(Square::C3 as i32), 2);
-        assert_eq!(BoardHelper::get_file(Square::D4 as i32), 3);
-        assert_eq!(BoardHelper::get_file(Square::E5 as i32), 4);
-        assert_eq!(BoardHelper::get_file(Square::F6 as i32), 5);
-        assert_eq!(BoardHelper::get_file(Square::G7 as i32), 6);
-        assert_eq!(BoardHelper::get_file(Square::H8 as i32), 7);
+        assert_eq!(BoardHelper::get_file(Square::H1 as i32), 7);
+        assert_eq!(BoardHelper::get_file(Square::G2 as i32), 6);
+        assert_eq!(BoardHelper::get_file(Square::F3 as i32), 5);
+        assert_eq!(BoardHelper::get_file(Square::E4 as i32), 4);
+        assert_eq!(BoardHelper::get_file(Square::D5 as i32), 3);
+        assert_eq!(BoardHelper::get_file(Square::C6 as i32), 2);
+        assert_eq!(BoardHelper::get_file(Square::B7 as i32), 1);
+        assert_eq!(BoardHelper::get_file(Square::A8 as i32), 0);
     }
 
     #[test]
