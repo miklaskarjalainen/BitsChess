@@ -229,6 +229,8 @@ impl ChessBoard {
             let square = BoardHelper::pop_lsb(&mut attackers);
             overlapping_pieces.push(square);
         }
+        if overlapping_pieces.len() < 1 { return (false, false); }
+
 
         let mut disambiguate_rank = false;
         let mut disambiguate_file = false;
@@ -257,6 +259,9 @@ impl ChessBoard {
                 }
             }
         }
+
+        //
+        disambiguate_rank = disambiguate_rank || (!disambiguate_file && !disambiguate_rank);
 
         (disambiguate_file, disambiguate_rank)
     }
@@ -366,7 +371,7 @@ impl ChessBoard {
         // PGN move examples: 
         // e4      (A pawn moved to 'e4')
         // Ng1     (A Knight moved to 'g1')
-        // Qe2xe4+ (Queen moved from e2 and captured a piece on e4 whilst putting the opponent's king in check)
+        // Qe2xe4+ (Queen moved from e2, captured a piece on e4 whilst putting the opponent's king in check)
         // exd8=Q# (A pawn moved from e file to d8, captured a piece, promoted to a Queen and check mated the opponent).
 
         if pgn.len() < 2 {
