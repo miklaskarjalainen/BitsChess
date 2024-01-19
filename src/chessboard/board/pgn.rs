@@ -374,7 +374,7 @@ impl ChessBoard {
         }
         
         // The objective here is to get the destination square, which at the end of the pgn (before the flags).
-        // So removing the flags we such "#", "=Q", "=N", "+" we guarantee that the destination square is at the end.
+        // So removing the flags such "#", "=Q", "=N", "+" we guarantee that the destination square is at the end.
         // "Qe2xe4+" -> "Qe2e4"
         let flagless = pgn
         .replace("#", "")  // check make
@@ -523,7 +523,7 @@ mod tests {
     }
     
     #[test]
-    fn test_pgn_ambiguous() {
+    fn test_pgn_ambiguous_sliding() {
         let mut board = ChessBoard::new();
         board.parse_fen("3r3r/2k5/8/R7/4Q2Q/8/1K6/R6Q w - - 0 1").unwrap();
 
@@ -536,6 +536,17 @@ mod tests {
         assert_eq!(pgn.moves.pop(), Some(String::from("Qh4e1"))); 
         assert_eq!(pgn.moves.pop(), Some(String::from("Rdf8")));
         assert_eq!(pgn.moves.pop(), Some(String::from("R1a3")));
+    }
+
+    #[test]
+    fn test_pgn_ambiguous_knights() {
+        let mut board = ChessBoard::new();
+        board.parse_fen("rnbq1rk1/2p1bppp/p2p1n2/1p2p3/3PP3/1BP2N1P/PP3PP1/RNBQR1K1 b - d3 0 10").expect("valid fen");
+        board.make_move_uci("f6d7").unwrap();
+
+        let mut pgn = board.to_pgn();
+        // 3 different queens can move to the same location, from different files and ranks so both are needed 
+        assert_eq!(pgn.moves.pop(), Some(String::from("Nfd7"))); 
     }
 
     #[test]
