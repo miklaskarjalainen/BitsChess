@@ -88,7 +88,7 @@ mod tests {
     
         board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1").expect("valid fen");
         board.make_move_uci("e8g8").expect("valid");
-        board.make_move_uci("e1b1").expect("valid");
+        board.make_move_uci("e1c1").expect("valid");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     }
 
