@@ -87,6 +87,16 @@ fn main() {
         else if BoardHelper::is_valid_uci_move(&line) {
             board.make_move_uci(&line);
         }   
+        else if &line == "cpu-ins" {
+            println!("Allowed cpu instruction sets:");
+            println!("\tAVX={}", cfg!(target_feature = "avx"));
+            println!("\tAVX2={}", cfg!(target_feature = "avx2"));
+            println!("\tSSE={}", cfg!(target_feature = "sse"));
+            println!("\tSSE2={}", cfg!(target_feature = "sse2"));
+            println!("\tSSE3={}", cfg!(target_feature = "sse3"));
+            println!("\tSSE4.1={}", cfg!(target_feature = "sse4.1"));
+            println!("\tSSE4.2={}", cfg!(target_feature = "sse4.2"));
+        }
         else {
             println!("invalid command :^(");
         }
