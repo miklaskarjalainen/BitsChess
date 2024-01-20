@@ -65,6 +65,6 @@ cargo test # add '--release' for optimized builds
 ## Sources
 Sources for the content which helped me to develop this chess library!
 
-https://www.chessprogramming.org/  
-https://www.youtube.com/watch?v=U4ogK0MIzqk  
-https://www.youtube.com/@chessprogramming591
+<https://www.chessprogramming.org/>  
+<https://www.youtube.com/watch?v=U4ogK0MIzqk>  
+<https://www.youtube.com/@chessprogramming591>  
