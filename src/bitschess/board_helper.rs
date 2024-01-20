@@ -27,9 +27,15 @@ impl Square {
 impl BoardHelper {
     // "a1" -> 0, "B2" -> 9
     #[must_use]
-    pub fn text_to_square(uci_cmd: &str) -> i32 {
-        let file = Self::file_to_idx(uci_cmd.chars().nth(0).unwrap());
-        let rank = Self::rank_to_idx(uci_cmd.chars().nth(1).unwrap());
+    pub const fn text_to_square(uci_cmd: &str) -> i32 {
+        if uci_cmd.len() < 2 {
+            return -1;
+        }
+
+        let file_char = uci_cmd.as_bytes()[0] as char;
+        let rank_char = uci_cmd.as_bytes()[1] as char;
+        let file = Self::file_to_idx(file_char);
+        let rank = Self::rank_to_idx(rank_char);
         Self::file_rank_to_idx(file, rank)
     }
 

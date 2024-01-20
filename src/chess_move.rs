@@ -1,5 +1,5 @@
-use super::board_helper::BoardHelper;
-use super::piece::Piece;
+use crate::bitschess::board_helper::BoardHelper;
+use crate::piece::Piece;
 
 #[repr(u8)]
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -36,13 +36,29 @@ impl MoveFlag {
     }
 }
 
-// 0-5 bit from
-// 6-11 bits to
-// 12-15 Flags 
+
+/// Move is represented with 16 bits (0bFFFFDDDDDDSSSSSS)
+/// Where the first 0..=5 bits represent the square a piece is moving from (source/from),
+/// 6..=11 bits represent the square the piece is moving to (destination/to) and
+/// 12..=15 bits represent the flags of the move.  
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Move(pub u16);
 
 impl Move {
+    /// Creates a new move.
+    /// 
+    /// * `from: i32` - Represents the square to move from, should be in range of (0..=63).
+    /// * `to: i32`   - Represents the destination square to move to, should be in range of (0..=63).
+    /// * `flag: MoveFlag` - Additional flags for the move, should be defaulted to [MoveFlag::None].
+    /// 
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::{Move, MoveFlag};
+    /// let m = Move::new(12,28, MoveFlag::PawnTwoUp); // e2->e4
+    /// assert_eq!(m.get_from_idx(), 12);
+    /// assert_eq!(m.get_to_idx(), 28);
+    /// assert_eq!(m.get_flag(), MoveFlag::PawnTwoUp);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn new(from: i32, to: i32, flag: MoveFlag) -> Self {
@@ -53,6 +69,14 @@ impl Move {
         Self(m)
     }
 
+    /// Returns the flag of the move.
+    ///
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::{Move, MoveFlag};
+    /// let m = Move::new(0,0, MoveFlag::Castle);
+    /// assert_eq!(m.get_flag(), MoveFlag::Castle);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn get_flag(self) -> MoveFlag {
@@ -60,18 +84,43 @@ impl Move {
         MoveFlag::from_u8(flags as u8)
     }
 
+    /// Returns the source square.
+    /// 
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::{Move, MoveFlag};
+    /// let m = Move::new(12,28, MoveFlag::PawnTwoUp);
+    /// assert_eq!(m.get_from_idx(), 12);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn get_from_idx(self) -> i32 {
         (self.0 & 0b111111) as i32
     }
 
+    /// Returns the destination square.
+    /// 
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::{Move, MoveFlag};
+    /// let m = Move::new(12,28, MoveFlag::PawnTwoUp);
+    /// assert_eq!(m.get_to_idx(), 28);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn get_to_idx(self) -> i32 {
         ((self.0 >> 6) & 0b111111) as i32
     }
 
+    /// Helper function to check if a move does en passant.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::{Move, MoveFlag};
+    /// let m1 = Move::new(12,28, MoveFlag::PawnTwoUp);
+    /// let m2 = Move::new(27,20, MoveFlag::EnPassant);
+    /// assert_eq!(m1.is_en_passant(), false);
+    /// assert_eq!(m2.is_en_passant(), true);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
@@ -79,6 +128,7 @@ impl Move {
         self.get_flag().eq_const(MoveFlag::EnPassant)
     }
     
+    /// Helper function to check if a move castles.
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
@@ -86,6 +136,7 @@ impl Move {
         self.get_flag().eq_const(MoveFlag::Castle)
     }
 
+    /// Helper function to check if a pawn moved 2 up.
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
@@ -93,12 +144,18 @@ impl Move {
         self.get_flag().eq_const(MoveFlag::PawnTwoUp)
     }
 
-    /// <https://en.wikipedia.org/wiki/Universal_Chess_Interface>
-    /// Outputs: "e2e4", "e7e8q" 
+
+    /// Converts the move into a [UCI (Universal Chess Interface)](https://en.wikipedia.org/wiki/Universal_Chess_Interface)
+    /// command.
+    /// 
+    /// # Returns
+    /// * basic: "e2e4" a piece moved from e2 to e4
+    /// * promotion: "e7e8q" last character tells us the promotion piece. See [Piece::to_char].
     #[must_use]
     pub fn to_uci(self) -> String {
         let (frank, ffile) = BoardHelper::square_to_chars(self.get_from_idx());
         let (trank, tfile) = BoardHelper::square_to_chars(self.get_to_idx());
+        
         let mut str = format!("{frank}{ffile}{trank}{tfile}");
 
         match self.get_flag() {
@@ -107,39 +164,56 @@ impl Move {
             MoveFlag::PromoteBishop => { str.push('b'); }
             MoveFlag::PromoteKnight => { str.push('n'); }
             _ => {}
-        } 
+        }
 
         str
     }
     
-    /// Correct inputs: "e2e4", "e7e8q" 
-    /// <https://en.wikipedia.org/wiki/Universal_Chess_Interface>
+    /// Converts the move into a [UCI (Universal Chess Interface)](https://en.wikipedia.org/wiki/Universal_Chess_Interface)
+    /// command.
+    /// 
+    /// # Valid Inputs
+    /// * basic: "e2e4" a piece moved from e2 to e4
+    /// * promotion: "e7e8q" last character tells us the promotion piece. See [Piece::from_char].
+    /// 
+    /// # Examples
+    /// ```
+    /// use bitschess::{Move, MoveFlag};
+    /// let m1 = Move::from_uci("e2e4");
+    /// let m2 = Move::from_uci("e7e8q");
+    /// assert_eq!(m1.get_from_idx(), 12);
+    /// assert_eq!(m1.get_to_idx(), 28);
+    /// assert_eq!(m2.get_from_idx(), 52);
+    /// assert_eq!(m2.get_to_idx(), 60);
+    /// assert_eq!(m2.get_flag(), MoveFlag::PromoteQueen);
+    /// ```
     #[must_use]
     #[allow(dead_code)]
-    pub fn from_uci(uci: &str) -> Self {
+    pub const fn from_uci(uci: &str) -> Self {
         assert!(uci.len() >= 4);
 
-        let from = BoardHelper::text_to_square(&uci[0..2]);
-        let to = BoardHelper::text_to_square(&uci[2..4]);
+        let bytes = uci.as_bytes();
+        let from = BoardHelper::chars_to_square(bytes[0] as char, bytes[1] as char);
+        let to = BoardHelper::chars_to_square(bytes[2] as char, bytes[3] as char);
 
         // flags
         let mut flag = MoveFlag::None;
         if uci.len() > 4 {
-            match uci.chars().nth(4) {
+            match bytes[4] as char {
                 // Promotions
-                Some('n') => {
+                'n' => {
                     flag = MoveFlag::PromoteKnight;
                 }
 
-                Some('b') => {
+                'b' => {
                     flag = MoveFlag::PromoteBishop;
                 }
 
-                Some('r') => {
+                'r' => {
                     flag = MoveFlag::PromoteRook;
                 }
 
-                Some('q') => {
+                'q' => {
                     flag = MoveFlag::PromoteQueen;
                 }
 

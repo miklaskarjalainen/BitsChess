@@ -10,9 +10,10 @@ use move_generation::MoveGenerator;
 use repetition_table::RepetitionTable;
 use super::bitboard::BitBoard;
 use super::board_helper::BoardHelper;
-use super::chessmove::{Move, MoveFlag, ReversibleMove};
-use super::piece::{Piece, PieceType, PieceColor};
 use super::board_helper::Square;
+
+use crate::chess_move::{Move, MoveFlag, ReversibleMove};
+use crate::piece::{Piece, PieceType, PieceColor};
 
 /// A Chessboard is 8x8 
 pub const CHESSBOARD_WIDTH: i32 = 8;

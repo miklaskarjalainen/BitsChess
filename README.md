@@ -16,6 +16,7 @@ bitschess = { git = "https://github.com/miklaskarjalainen/BitsChess.git" }
 A simple example of using the BitsChess library
 
 ```rust
+use bitschess::Move;
 use bitschess::prelude::*;
 
 fn main()  {

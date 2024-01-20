@@ -1,6 +1,9 @@
 #![allow(clippy::inline_always)]
 
 mod bitschess;
+mod chess_move;
+mod piece;
+
 use bitschess::board::fen::STARTPOS_FEN;
 use bitschess::board::ChessBoard;
 use bitschess::board_helper::BoardHelper;

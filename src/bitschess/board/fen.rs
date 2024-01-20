@@ -1,7 +1,7 @@
 use super::{ChessBoard, CHESSBOARD_WIDTH};
 
 use crate::bitschess::board_helper::BoardHelper;
-use crate::bitschess::piece::{Piece, PieceColor, PieceType};
+use crate::piece::{Piece, PieceColor, PieceType};
 
 #[allow(dead_code)]
 pub const STARTPOS_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -181,7 +181,7 @@ impl ChessBoard {
 mod tests {
     use super::*;
     use crate::bitschess::board_helper::BoardHelper;
-    use crate::bitschess::piece::PieceType;
+    use crate::piece::PieceType;
 
     #[test]
     fn test_parse_fen_basic1() {

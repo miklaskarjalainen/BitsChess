@@ -15,7 +15,7 @@ pub const HG_FILE: u64 = H_FILE | G_FILE;
 pub const NOT_H_FILE: u64 = !H_FILE;
 pub const NOT_HG_FILE: u64 = !HG_FILE;
 
-use super::piece::PieceColor;
+use crate::piece::PieceColor;
 
 lazy_static! {
     pub static ref PAWN_ATTACKS: [[u64; 64]; 2] = {
