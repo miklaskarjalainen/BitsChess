@@ -1,12 +1,14 @@
 #![allow(clippy::inline_always)]
-pub mod chessboard;
+
+#![doc = include_str!("../README.md")]
+pub mod bitschess;
 
 pub mod prelude {
-    pub use super::chessboard::bitboard::*;
-    pub use super::chessboard::board::*;
-    pub use super::chessboard::board::fen::*;
-    pub use super::chessboard::board_helper::*;
-    pub use super::chessboard::chessmove::*;
-    pub use super::chessboard::piece::*;
+    pub use super::bitschess::bitboard::*;
+    pub use super::bitschess::board::*;
+    pub use super::bitschess::board::fen::*;
+    pub use super::bitschess::board_helper::*;
+    pub use super::bitschess::chessmove::*;
+    pub use super::bitschess::piece::*;
 }
 

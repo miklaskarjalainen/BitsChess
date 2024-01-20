@@ -14,6 +14,7 @@ use super::chessmove::{Move, MoveFlag, ReversibleMove};
 use super::piece::{Piece, PieceType, PieceColor};
 use super::board_helper::Square;
 
+/// A Chessboard is 8x8 
 pub const CHESSBOARD_WIDTH: i32 = 8;
 
 #[derive(Clone, Debug)]

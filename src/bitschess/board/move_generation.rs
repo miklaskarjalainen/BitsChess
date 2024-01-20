@@ -1,11 +1,11 @@
 
 use super::ChessBoard;
 
-use crate::chessboard::bitboard::{PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
-use crate::chessboard::board_helper::{BoardHelper, Square};
-use crate::chessboard::chessmove::{Move,MoveFlag};
-use crate::chessboard::piece::{PieceColor, PieceType};
-use crate::chessboard::board::magics::{get_bishop_magic, get_rook_magic};
+use crate::bitschess::bitboard::{PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
+use crate::bitschess::board_helper::{BoardHelper, Square};
+use crate::bitschess::chessmove::{Move,MoveFlag};
+use crate::bitschess::piece::{PieceColor, PieceType};
+use crate::bitschess::board::magics::{get_bishop_magic, get_rook_magic};
 
 impl ChessBoard {
     #[inline(always)]
@@ -58,7 +58,7 @@ impl MoveGenerator {
 
     /// if generate_quiet == false then moves which doesn't either capture or promote to a queen won't be generated.
     pub fn get_legal_moves(board: &ChessBoard, generate_quiet: bool) -> Vec<Move> {
-        use crate::chessboard::bitboard;
+        use crate::bitschess::bitboard;
         let color_idx = board.turn as usize;
         let enemy_bitboard_idx = board.turn.flipped() as usize;
 
@@ -370,7 +370,7 @@ impl MoveGenerator {
     }
     
     pub fn get_attack_mask(board: &ChessBoard) -> u64 {
-        use crate::chessboard::bitboard;
+        use crate::bitschess::bitboard;
         let king_mask = board.bitboards[board.get_turn() as usize * 6 + 5].get_bits();
         let enemy_color = board.get_turn().flipped();
         

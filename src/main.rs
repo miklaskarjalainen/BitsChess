@@ -1,17 +1,16 @@
 #![allow(clippy::inline_always)]
 
-mod chessboard;
-
-use chessboard::board::fen::STARTPOS_FEN;
-use chessboard::board::ChessBoard;
-use chessboard::board_helper::BoardHelper;
-use chessboard::bitboard::BitBoard;
+mod bitschess;
+use bitschess::board::fen::STARTPOS_FEN;
+use bitschess::board::ChessBoard;
+use bitschess::board_helper::BoardHelper;
+use bitschess::bitboard::BitBoard;
 
 fn main() {
     let mut board = ChessBoard::new();
     println!("Welcome to BitChess' interface!");
     
-    board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1").expect("valid fen");
+    board.parse_fen(STARTPOS_FEN).expect("valid fen");
 
     loop {
         let line = std::io::stdin().lines().next().expect("").expect("");
@@ -56,17 +55,17 @@ fn main() {
             }
         }
         else if args[0] == "attackmask" {
-            use crate::chessboard::board::move_generation::MoveGenerator;
+            use crate::bitschess::board::move_generation::MoveGenerator;
             let atk = MoveGenerator::get_attack_mask(&board);
             println!("{}", BitBoard::new(atk));
         }
         else if args[0] == "checkmask" {
-            use crate::chessboard::board::move_generation::MoveGenerator;
+            use crate::bitschess::board::move_generation::MoveGenerator;
             let (double_check, all_pieces) = MoveGenerator::get_check_mask(&board);
             println!("double_check: {double_check}\n{}", BitBoard::new(all_pieces));
         }
         else if args[0] == "pinmask" {
-            use crate::chessboard::board::move_generation::MoveGenerator;
+            use crate::bitschess::board::move_generation::MoveGenerator;
             let (hv, d12) = MoveGenerator::get_pinned_mask(&board);
 
             println!("HorizontalVertical: \n{}", BitBoard::new(hv));
