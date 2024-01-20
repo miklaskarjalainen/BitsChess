@@ -1,3 +1,4 @@
+#![allow(clippy::inline_always)]
 pub mod chessboard;
 
 pub mod prelude {

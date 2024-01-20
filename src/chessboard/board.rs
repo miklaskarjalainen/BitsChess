@@ -95,10 +95,38 @@ impl std::fmt::Display for ChessBoard {
     }
 }
 
+impl Default for ChessBoard {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChessBoard {
+    #[must_use]
+    #[inline(always)]
+    pub fn new() -> Self {
+        let mut x = Self {
+            board: [Piece::new(0x0); 64],
+            bitboards: [BitBoard::new(0); 12],
+            side_bitboards: [BitBoard::new(0); 2],
+
+            turn: PieceColor::White,
+            en_passant: -1,
+            castling_rights: [true; 4],
+            half_move: 0,
+            full_move: 1,
+            zobrist_hash: 0,
+
+            repetitions: RepetitionTable::new(),
+            move_history: vec![],
+        };
+        x.new_game();
+        x
+    }
+
     pub fn clear(&mut self) {
         for idx in 0..64 {
-            self.set_piece(idx, Piece::new(0));
+            let _ = self.set_piece(idx, Piece::new(0));
         }
         
         self.turn = PieceColor::White;
@@ -116,11 +144,12 @@ impl ChessBoard {
     }
 
     /// Only does legal moves.
+    #[must_use]
     pub fn make_move_uci(&mut self, uci: &str) -> Option<()> {
         let from = BoardHelper::text_to_square(&uci[0..2]);
         let legal_moves = self.get_legal_moves_for_square(from);
-        let mut filtered_moves: Vec<Move> = legal_moves.into_iter().filter(|m| { return m.to_uci() == uci}).collect();
-        if filtered_moves.len() == 0 {
+        let mut filtered_moves: Vec<Move> = legal_moves.into_iter().filter(|m| { m.to_uci() == uci}).collect();
+        if filtered_moves.is_empty() {
             return None;
         }
         let m = filtered_moves.pop().expect("?");
@@ -130,10 +159,12 @@ impl ChessBoard {
     }
 
     /// Before doing the move, checks legality.
+    #[must_use]
+    #[allow(dead_code)]
     pub fn make_move_checked(&mut self, chess_move: Move) -> bool {
         let legal_moves = self.get_legal_moves_for_square(chess_move.get_from_idx());
-        let mut filtered_moves: Vec<Move> = legal_moves.into_iter().filter(|m| { return m == &chess_move }).collect();
-        if filtered_moves.len() == 0 {
+        let mut filtered_moves: Vec<Move> = legal_moves.into_iter().filter(|m| { m == &chess_move }).collect();
+        if filtered_moves.is_empty() {
             return false;
         }
         let m = filtered_moves.pop().expect("?");
@@ -141,16 +172,20 @@ impl ChessBoard {
         true
     }
 
+    #[must_use]
     #[inline(always)]
     pub fn get_legal_moves(&self) -> Vec<Move> { 
         MoveGenerator::get_legal_moves(self, true)
     }
 
+    #[must_use]
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn get_legal_captures(&self) -> Vec<Move> { 
         MoveGenerator::get_legal_moves(self, false)
     }
 
+    #[must_use]
     #[inline(always)]
     pub fn get_legal_moves_for_square(&self, square: i32) -> Vec<Move> { 
         MoveGenerator::get_legal_moves_for_square(self, square)
@@ -182,7 +217,7 @@ impl ChessBoard {
         }
         str.push_str("   a b c d e f g h\n");
 
-        println!("{}", str);
+        println!("{str}");
     }
 
     pub fn make_move(&mut self, chess_move: Move, is_in_search: bool) {
@@ -209,8 +244,8 @@ impl ChessBoard {
                 let en_passant_dir = if moving_piece.get_color() == PieceColor::Black { 8 } else { -8 };
 
                 // Move
-                self.set_piece(from, Piece::new(0));
-                self.set_piece(to, moving_piece);
+                let _ = self.set_piece(from, Piece::new(0));
+                let _ = self.set_piece(to, moving_piece);
                 
                 // Capture
                 let captured = self.set_piece(to + en_passant_dir, Piece::new(0));
@@ -231,23 +266,23 @@ impl ChessBoard {
                     // White king side
                     Square::G1 => {
                         let rook = self.set_piece(Square::H1 as i32, Piece::new(0));
-                        self.set_piece(Square::F1 as i32, rook);
+                        let _ = self.set_piece(Square::F1 as i32, rook);
                     }
                     // White queen side
                     Square::C1 => {
                         let rook = self.set_piece(Square::A1 as i32, Piece::new(0));
-                        self.set_piece(Square::D1 as i32, rook);
+                        let _ = self.set_piece(Square::D1 as i32, rook);
                     }
 
                     // Black king side
                     Square::G8 => {
                         let rook = self.set_piece(Square::H8 as i32, Piece::new(0));
-                        self.set_piece(Square::F8 as i32, rook);
+                        let _ = self.set_piece(Square::F8 as i32, rook);
                     }
                     // Black queen side
                     Square::C8 => {
                         let rook = self.set_piece(Square::A8 as i32, Piece::new(0));
-                        self.set_piece(Square::D8 as i32, rook);
+                        let _ = self.set_piece(Square::D8 as i32, rook);
                     }
 
                     _ => { panic!("huh????? {}", to); }
@@ -264,7 +299,7 @@ impl ChessBoard {
         }
         
         // Move & Capture
-        self.set_piece(from, Piece::new(0));
+        let _ = self.set_piece(from, Piece::new(0));
         let captured = self.set_piece(to, moving_piece);
 
         // Half move
@@ -285,7 +320,7 @@ impl ChessBoard {
                 if moving_piece.get_color() == PieceColor::White {
                     if self.castling_rights[0] {
                         self.castling_rights[0] = false;
-                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+0];
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING];
                     }
                     
                     if self.castling_rights[1] {
@@ -311,7 +346,7 @@ impl ChessBoard {
                     Square::H1 => {
                         if self.castling_rights[0] {
                             self.castling_rights[0] = false;
-                            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+0];
+                            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING];
                         }
                     }
                     Square::A1 => {
@@ -346,6 +381,8 @@ impl ChessBoard {
     }
 
     // Not able to move not counted here.
+    #[must_use]
+    #[allow(dead_code)]
     pub fn is_draw(&self) -> bool {
         // 50 move rule
         if self.half_move == 100 {
@@ -361,10 +398,12 @@ impl ChessBoard {
         false
     }
 
+    #[must_use]
     pub fn is_check_mate(&self) -> bool {
-        self.is_king_in_check(self.turn) && self.get_legal_moves().len() == 0
+        self.is_king_in_check(self.turn) && self.get_legal_moves().is_empty()
     }
 
+    #[must_use]
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() { return None; }
         
@@ -383,41 +422,41 @@ impl ChessBoard {
                 let captured_square = move_made.board_move.get_to_idx() + en_passant_dir;
 
                 // Correctly undo capture
-                self.set_piece(move_made.board_move.get_to_idx(), Piece::new(0));
-                self.set_piece(captured_square, move_made.captured);
+                let _ = self.set_piece(move_made.board_move.get_to_idx(), Piece::new(0));
+                let _ = self.set_piece(captured_square, move_made.captured);
             }
             MoveFlag::Castle => {
                 match Square::from_u32(move_made.board_move.get_to_idx() as u32) {
                     // White king side
                     Square::G1 => {
                         let rook = self.set_piece(Square::F1 as i32, Piece::new(0));
-                        self.set_piece(Square::H1 as i32, rook);
+                        let _ = self.set_piece(Square::H1 as i32, rook);
                     }
                     // White queen side
                     Square::C1 => {
                         let rook = self.set_piece(Square::D1 as i32, Piece::new(0));
-                        self.set_piece(Square::A1 as i32, rook);
+                        let _ = self.set_piece(Square::A1 as i32, rook);
                     }
 
                     // Black king side
                     Square::G8 => {
                         let rook = self.set_piece(Square::F8 as i32, Piece::new(0));
-                        self.set_piece(Square::H8 as i32, rook);
+                        let _ = self.set_piece(Square::H8 as i32, rook);
                     }
                     // Black queen side
                     Square::C8 => {
                         let rook = self.set_piece(Square::D8 as i32, Piece::new(0));
-                        self.set_piece(Square::A8 as i32, rook);
+                        let _ = self.set_piece(Square::A8 as i32, rook);
                     }
 
-                    _ => { panic!("huh????? {:?}", move_made); }
+                    _ => { panic!("huh????? {move_made:?}"); }
                 }
             }
             MoveFlag::PromoteQueen | MoveFlag::PromoteRook | MoveFlag::PromoteBishop | MoveFlag::PromoteKnight => { moving_piece.set_piece(PieceType::Pawn); }
             _ => { }
         }
 
-        self.set_piece(move_made.board_move.get_from_idx(), moving_piece);
+        let _ = self.set_piece(move_made.board_move.get_from_idx(), moving_piece);
 
         /* Board flags */
         self.en_passant = move_made.en_passant_square;
@@ -432,12 +471,14 @@ impl ChessBoard {
         Some(move_made.board_move)
     }
 
+    #[must_use]
     #[inline(always)]
     pub fn get_king_square(&self, king_color: PieceColor) -> i32 {
-        return BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)].get_bits());
+        BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)].get_bits())
     }
 
     // returns the piece that was on the square before
+    #[must_use]
     pub fn set_piece(&mut self, square: i32, piece: Piece) -> Piece {
         // Remove the captured piece from all bitboards
         let captured = self.board[square as usize];
@@ -453,6 +494,7 @@ impl ChessBoard {
         captured
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn get_piece(&self, square: i32) -> Piece {
         self.board[square as usize]
@@ -463,30 +505,10 @@ impl ChessBoard {
         self.turn = turn; 
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn get_turn(&self) -> PieceColor { 
         self.turn 
-    }
-
-    #[inline(always)]
-    pub fn new() -> Self {
-        let mut x = Self {
-            board: [Piece::new(0x0); 64],
-            bitboards: [BitBoard::new(0); 12],
-            side_bitboards: [BitBoard::new(0); 2],
-
-            turn: PieceColor::White,
-            en_passant: -1,
-            castling_rights: [true; 4],
-            half_move: 0,
-            full_move: 1,
-            zobrist_hash: 0,
-
-            repetitions: RepetitionTable::new(),
-            move_history: vec![],
-        };
-        x.new_game();
-        x
     }
 
     #[inline(always)]
@@ -598,8 +620,8 @@ mod tests {
         board.parse_fen(fen).expect("valid fen");
 
         let copy = board.clone();
-        board.make_move_uci(uci_move);
-        board.unmake_move();
+        board.make_move_uci(uci_move).expect("valid");
+        let _ = board.unmake_move();
         
         assert_eq!(board, copy, "\n\n\nexpected\n{}\n---------------------------\n got\n{}\n", copy, board);
     }

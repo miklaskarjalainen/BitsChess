@@ -1,7 +1,9 @@
-use super::{ BoardHelper, ChessBoard, Piece, PieceType, Move, MoveFlag, ReversibleMove, Square };
+
+use super::{ BoardHelper, ChessBoard, PieceType, Move, MoveFlag, ReversibleMove, Square };
 use super::fen::STARTPOS_FEN;
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum PGNParserError {
     SyntaxError,
@@ -9,12 +11,12 @@ pub enum PGNParserError {
 
 // https://en.wikipedia.org/wiki/Portable_Game_Notation
 #[derive(Debug)]
-pub struct PGN {
+pub struct Pgn {
     tags: HashMap<String, String>, 
     moves: Vec<String>
 }
 
-impl ToString for PGN {
+impl ToString for Pgn {
     fn to_string(&self) -> String {
         let mut pgn = String::new();
 
@@ -49,7 +51,13 @@ impl ToString for PGN {
     }
 }
 
-impl PGN {
+impl Default for Pgn {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Pgn {
     pub fn new() -> Self {
         Self {
             tags: HashMap::new(),
@@ -58,27 +66,32 @@ impl PGN {
     }
 
     /// Replaces the tag if already set
+    #[allow(dead_code)]
     #[inline(always)]
     pub fn set_tag(&mut self, tag: impl Into<String>, value: impl Into<String>) {
         self.tags.insert(tag.into(), value.into());
     }
 
+    #[allow(dead_code)]
     #[inline(always)]
     pub fn get_tag(&mut self, tag: impl AsRef<String>) -> Option<&String> {
         self.tags.get(tag.as_ref())
     }
 
+    #[allow(dead_code)]
     #[inline(always)]
     pub fn del_tag(&mut self, tag: impl AsRef<String>) -> bool {
         self.tags.remove_entry(tag.as_ref()).is_some()
     }
 
-    pub fn parse_string(&mut self, contents: String) {
-        self.tags = Self::parse_tags(&contents).expect("parse error");
-        self.moves = Self::parse_moves(&contents).expect("parse error");
+    #[allow(dead_code)]
+    pub fn parse_string(&mut self, contents: &str) {
+        self.tags = Self::parse_tags(contents).expect("parse error");
+        self.moves = Self::parse_moves(contents).expect("parse error");
     }
 
-    pub fn parse_tags(contents: &String) -> Result<HashMap<String, String>, PGNParserError> {
+    #[allow(dead_code, clippy::unnecessary_wraps)] // TODO: proper error handling
+    pub fn parse_tags(contents: &str) -> Result<HashMap<String, String>, PGNParserError> {
         /*
         What we're trying to parse:
         [Event "F/S Return Match"]
@@ -153,7 +166,9 @@ impl PGN {
         Ok(tags)
     }
 
-    pub fn parse_moves(contents: &String) -> Result<Vec<String>, PGNParserError> {
+    // TODO: proper error handling
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn parse_moves(contents: &str) -> Result<Vec<String>, PGNParserError> {
         /*
         What we're trying to parse:
         1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7
@@ -175,7 +190,7 @@ impl PGN {
             .collect::<Vec<&str>>()
             .into_iter()
             .filter(|x| { !x.is_empty() && !x.contains('.') })
-            .map(|x| { return String::from(x)})
+            .map(|x| { String::from(x)} )
             .collect::<Vec<String>>()
         )
     }
@@ -229,7 +244,7 @@ impl ChessBoard {
             let square = BoardHelper::pop_lsb(&mut attackers);
             overlapping_pieces.push(square);
         }
-        if overlapping_pieces.len() < 1 { return (false, false); }
+        if overlapping_pieces.len() < 2 { return (false, false); }
 
 
         let mut add_file = false;
@@ -248,7 +263,7 @@ impl ChessBoard {
 
         // by default add file if not in the same file nor rank
         // but can move into same location (happens with knights)
-        add_file = add_file || (!add_file && !add_rank);
+        add_file = add_file || !add_rank;
 
         (add_file, add_rank)
     }
@@ -297,13 +312,13 @@ impl ChessBoard {
         format!("{}{}{}{}{}", moving, dis_amb, captured, to_square, promotion)
     }
 
-    pub fn to_pgn(&self) -> PGN {
+    pub fn to_pgn(&self) -> Pgn {
         use chrono::prelude::*;
 
         let now = Local::now();
         now.day();
         
-        let mut pgn = PGN::new();
+        let mut pgn = Pgn::new();
         
         // Seven tag roster
         pgn.set_tag("Event", "?");
@@ -316,8 +331,7 @@ impl ChessBoard {
 
         // get moves as pgn
         let mut board = self.clone();
-        while board.move_history.len() > 0 {
-            let reversible_move = board.move_history.last().unwrap().clone();
+        while let Some(reversible_move) = board.move_history.last().copied() {
             let check_or_mate = if board.is_check_mate() { "#" } else if board.is_king_in_check(board.turn) { "+" } else { "" };
             board.unmake_move().unwrap();
 
@@ -336,8 +350,9 @@ impl ChessBoard {
     }
 
     /// Tags are not saved!
-    pub fn parse_pgn(&mut self, pgn_str: String) {
-        let mut pgn = PGN::new();
+    #[allow(dead_code)]
+    pub fn parse_pgn(&mut self, pgn_str: &str) {
+        let mut pgn = Pgn::new();
         pgn.parse_string(pgn_str);
 
         println!("parsed moves {:?}", pgn.moves);
@@ -369,26 +384,24 @@ impl ChessBoard {
         // So removing the flags such "#", "=Q", "=N", "+" we guarantee that the destination square is at the end.
         // "Qe2xe4+" -> "Qe2e4"
         let flagless = pgn
-        .replace("#", "")  // check make
-        .replace("+", "")  // check
+        .replace(['#', '+', 'x'], "") // [check make, check, capture]
         .replace("=Q", "") // promote queen
         .replace("=R", "") // promote rook
         .replace("=B", "") // promote bishop
-        .replace("=N", "") // promote knight
-        .replace("x", "");  // capture
+        .replace("=N", ""); // promote knight
 
-        let moves = self.get_legal_moves().into_iter();
+        let mut moves = self.get_legal_moves().into_iter();
 
         // first if check if it's castle
         if flagless == "O-O" || flagless == "0-0" {
-            return moves.filter(|m| {
+            return moves.find(|m| {
                 m.get_to_idx() == Square::G1 as i32 || m.get_to_idx() == Square::G8 as i32
-            }).next();
+            });
         }
         else if flagless == "O-O-O" || flagless == "0-0-0" {
-            return moves.filter(|m| {
+            return moves.find(|m| { 
                 m.get_to_idx() == Square::C1 as i32 || m.get_to_idx() == Square::C8 as i32
-            }).next();
+            });
         }
 
         // extracting the destination square "Qe2e4" -> "4e2eQ" -> ('4', 'e') -> 28
@@ -415,10 +428,10 @@ impl ChessBoard {
         let mut file_from = -1;
         let mut rank_from = -1;
         for c in from_info.chars() {
-            if c >= 'a' && c <= 'h' {
+            if ('a'..='h').contains(&c) {
                 file_from = BoardHelper::file_to_idx(c);
             }
-            else if c >= '1' && c <= '8' {
+            else if ('1'..='8').contains(&c) {
                 rank_from = BoardHelper::rank_to_idx(c);
             }
         }

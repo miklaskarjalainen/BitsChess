@@ -3,6 +3,7 @@ use super::board::CHESSBOARD_WIDTH;
 pub struct BoardHelper;
 
 #[repr(u32)]
+#[allow(dead_code)]
 pub enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -25,6 +26,7 @@ impl Square {
 
 impl BoardHelper {
     // "a1" -> 0, "B2" -> 9
+    #[must_use]
     pub fn text_to_square(uci_cmd: &str) -> i32 {
         let file = Self::file_to_idx(uci_cmd.chars().nth(0).unwrap());
         let rank = Self::rank_to_idx(uci_cmd.chars().nth(1).unwrap());
@@ -32,17 +34,20 @@ impl BoardHelper {
     }
 
     // 'a','1' -> 0, 'B', '2' -> 9
+    #[must_use]
     pub const fn chars_to_square(file: char, rank: char) -> i32 {
         let file = Self::file_to_idx(file);
         let rank = Self::rank_to_idx(rank);
         Self::file_rank_to_idx(file, rank)
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn file_to_idx(file: char) -> i32 {
         (7u8 - (b'h' - (file.to_ascii_lowercase() as u8))) as i32
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn rank_to_idx(rank: char) -> i32 {
         if let Some(num) = rank.to_digit(10) {
@@ -51,29 +56,36 @@ impl BoardHelper {
         -1
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn file_rank_to_idx(file: i32, rank: i32) -> i32 {
         rank * CHESSBOARD_WIDTH + file
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn get_rank(square: i32) -> i32 {
         square >> 3
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn get_file(square: i32) -> i32 {
         square & 7
     }
 
     /// ```(file, rank)```
+    #[must_use]
     #[inline(always)]
+    #[allow(dead_code)]
     pub const fn file_and_rank(square: i32 ) -> (i32, i32) {
         (BoardHelper::get_file(square), BoardHelper::get_rank(square))
     }
 
     /// ```(file, rank)```
+    #[must_use]
     #[inline(always)]
+    #[allow(dead_code)]
     pub const fn square_to_chars(square: i32 ) -> (char, char) {
         if square == -1 {
             return ('-', '-');
@@ -85,6 +97,7 @@ impl BoardHelper {
     }
 
     /// ```outputs: "e4", "a1"```
+    #[must_use]
     #[inline(always)]
     pub fn square_to_string(square: i32) -> String {
         if square == -1 {
@@ -97,6 +110,7 @@ impl BoardHelper {
     }
     
     // https://www.chessprogramming.org/BitScan
+    #[must_use]
     #[inline(always)]
     pub const fn bitscan_forward(bb: u64) -> i32 {
         const INDEX64: [i32; 64] = [
@@ -111,9 +125,10 @@ impl BoardHelper {
         ];
         const DEBRUIJN64: u64 = 0x03f79d71b4cb0a89;
         assert!(bb != 0);
-        return INDEX64[(((bb ^ (bb-1)).wrapping_mul(DEBRUIJN64)) >> 58) as usize];
+        INDEX64[(((bb ^ (bb-1)).wrapping_mul(DEBRUIJN64)) >> 58) as usize]
     }
 
+    #[must_use]
     #[inline(always)]
     pub fn pop_lsb(bb: &mut u64) -> i32 {
         let pos = Self::bitscan_forward(*bb);
@@ -121,17 +136,20 @@ impl BoardHelper {
         pos
     }
 
+    #[must_use]
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn count_bits(mut b: u64) -> i32 {
         let mut count = 0;
         while b != 0 {
             count += 1;
-            Self::pop_lsb(&mut b);
+            let _ = Self::pop_lsb(&mut b);
         }
         count
     }
 
     /// e2e4 e7e8q
+    #[must_use]
     pub fn is_valid_uci_move(uci_move: &str) -> bool {
         if uci_move.len() != 4 && uci_move.len() != 5 {
             return false;

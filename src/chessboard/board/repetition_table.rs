@@ -39,6 +39,12 @@ impl std::fmt::Display for RepetitionTable {
     }
 }
 
+impl Default for RepetitionTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RepetitionTable {
     #[inline(always)]
     pub fn new() -> Self {

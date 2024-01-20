@@ -11,13 +11,13 @@ impl ChessBoard {
         let moves = self.get_legal_moves();
         let mut positions = 0u64;
         for m in moves {
-            self.make_move(m.clone(), true);
+            self.make_move(m, true);
             let move_perft = self.perft(depth - 1, false);
             if print {
                 println!("{}: {}", m.to_uci(), move_perft);
             }
             positions += move_perft;
-            self.unmake_move();
+            let _ = self.unmake_move();
         }
 
         if print {

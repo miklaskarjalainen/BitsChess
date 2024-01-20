@@ -45,7 +45,7 @@ lazy_static!{
             
             for b in blockers {
                 let key = magic_index(ROOK_MAGICS[square as usize], b, ROOK_SHIFTS[square as usize]);
-                map[square as usize][key as usize] = BitBoard::get_rook_attack_mask(square, b).get_bits();
+                map[square as usize][key] = BitBoard::get_rook_attack_mask(square, b).get_bits();
             }
         }
         map
@@ -68,7 +68,7 @@ lazy_static!{
             
             for b in blockers {
                 let key = magic_index(BISHOP_MAGICS[square as usize], b, BISHOP_SHIFTS[square as usize]);
-                map[square as usize][key as usize] = BitBoard::get_bishop_attack_mask(square, b).get_bits();
+                map[square as usize][key] = BitBoard::get_bishop_attack_mask(square, b).get_bits();
             }
         }
         map
@@ -134,9 +134,8 @@ pub fn rook_mask(square: i32) -> u64 {
     for f in (1..tf).rev() { 
         attacks |= 1u64 << (tr * 8 + f);
     }
-    return attacks;
+    attacks
 }
-
 
 fn generate_blocker_bitboards(mask: u64) -> Vec<u64> {
     let mut move_square_indices: Vec<i32> = vec![];
@@ -153,13 +152,13 @@ fn generate_blocker_bitboards(mask: u64) -> Vec<u64> {
     for pattern_index in 0..num_patterns {
         blocker_bitboards.push(0u64);
 
-        for bit_index in 0..move_square_indices.len() {
+        for (bit_index, map_square) in move_square_indices.iter().enumerate() {
             let bit = (pattern_index >> bit_index) & 0b1;
-            blocker_bitboards[pattern_index] |= (bit as u64) << move_square_indices[bit_index];
+            blocker_bitboards[pattern_index] |= (bit as u64) << map_square;
         }
     }
 
-    return blocker_bitboards;
+    blocker_bitboards
 }
 
 #[cfg(test)]

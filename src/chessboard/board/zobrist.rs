@@ -7,7 +7,6 @@ use lazy_static::lazy_static;
 const ZOBRIST_SEED: u64 = 212832809410876;
 pub const ZOBRIST_TURN: usize = 64*12;
 pub const ZOBRIST_CASTLING: usize = ZOBRIST_TURN + 1; // + 4
-pub const ZOBRIST_EN_PASSANT: usize = ZOBRIST_CASTLING + 5; // + 8 (1 for every file)
 
 lazy_static! {
     pub static ref ZOBRIST_KEYS: [u64; 12*64 + 1 + 4 + 8] = {
@@ -20,7 +19,7 @@ impl Piece {
     #[inline(always)]
     pub fn get_hash(self, square: i32) -> u64 {
         assert!(!self.is_none());
-        return ZOBRIST_KEYS[(square as usize) * 12 + self.get_piece_index()];
+        ZOBRIST_KEYS[(square as usize) * 12 + self.get_piece_index()]
     }
 }
 
@@ -48,14 +47,6 @@ impl ChessBoard {
             hash ^= ZOBRIST_KEYS[ZOBRIST_TURN];
         }
         
-        // en passant, not needed for 3-fold repetition. 
-        /*
-        if self.en_passant != -1 {
-            let file = BoardHelper::get_file(self.en_passant) as usize;
-            hash ^= ZOBRIST_KEYS[ZOBRIST_EN_PASSANT + file];
-        }
-        */ 
-        
         hash
     }
 
@@ -82,22 +73,22 @@ mod tests {
     fn test_make_move_zobrist_updation_basic() {
         let mut board = ChessBoard::new();
         board.parse_fen(STARTPOS_FEN).expect("valid fen");
-        board.make_move_uci("e2e4");
-        board.make_move_uci("e7e5");
+        board.make_move_uci("e2e4").expect("valid");
+        board.make_move_uci("e7e5").expect("valid");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     }
 
     #[test]
-    fn test_make_move_zobrist_updation_castling() {
+    fn test_make_move_zobrist_updating_castling() {
         let mut board = ChessBoard::new();
         board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1").expect("valid fen");
-        board.make_move_uci("e1g1");
-        board.make_move_uci("e8c8");
+        board.make_move_uci("e1g1").expect("valid");
+        board.make_move_uci("e8c8").expect("valid");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     
         board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1").expect("valid fen");
-        board.make_move_uci("e8g8");
-        board.make_move_uci("e1b1");
+        board.make_move_uci("e8g8").expect("valid");
+        board.make_move_uci("e1b1").expect("valid");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     }
 
@@ -105,10 +96,10 @@ mod tests {
     fn test_make_undo_move_zobrist_updation_basic() {
         let mut board = ChessBoard::new();
         board.parse_fen(STARTPOS_FEN).expect("valid fen");
-        board.make_move_uci("e2e4");
-        board.make_move_uci("e7e5");
-        board.unmake_move();
-        board.unmake_move();
+        board.make_move_uci("e2e4").expect("valid");
+        board.make_move_uci("e7e5").expect("valid");
+        board.unmake_move().expect("valid");
+        board.unmake_move().expect("valid");
         assert_eq!(board.zobrist_hash, board.create_zobrist_hash());
     }
 }

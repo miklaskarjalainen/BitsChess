@@ -1,24 +1,27 @@
+#![allow(clippy::inline_always)]
+
 mod chessboard;
 
 use chessboard::board::fen::STARTPOS_FEN;
-use chessboard::board::{ChessBoard, CHESSBOARD_WIDTH};
+use chessboard::board::ChessBoard;
 use chessboard::board_helper::BoardHelper;
-use chessboard::bitboard::*;
+use chessboard::bitboard::BitBoard;
 
 fn main() {
     let mut board = ChessBoard::new();
     println!("Welcome to BitChess' interface!");
-    board.parse_fen(STARTPOS_FEN).expect("valid fen");
+    
+    board.parse_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1").expect("valid fen");
 
     loop {
-        let line = std::io::stdin().lines().next().unwrap().unwrap();
+        let line = std::io::stdin().lines().next().expect("").expect("");
         let args: Vec<&str> = line.split(' ').collect();
 
         if &line == "exit" {
             break;
         }
         else if &line == "board" {
-            println!("{}", board);
+            println!("{board}");
         }
         else if &line == "pgn" {
             println!("{:?}", board.to_pgn());
@@ -33,21 +36,22 @@ fn main() {
             }
         }
         else if args.len() == 2 && args[0] == "checked" {
-            let square = BoardHelper::text_to_square(&args.last().unwrap()[0..2]);
-            println!("is {} checked?: {}", square, board.is_square_in_check(board.get_turn(), square));
+            if let Some(square_str) = args.last() {
+                let square = BoardHelper::text_to_square(&square_str[0..2]);
+                println!("is {square} checked?: {}", board.is_square_in_check(board.get_turn(), square));
+            }
         }
         else if args.len() == 3 && args[0] == "go" && args[1] == "perft" {
-
             match args.last().expect(":^(").parse::<u32>() {
                 Ok(depth) => {
                     let begin = std::time::Instant::now();
                     board.perft(depth, true);
-                    let duration = std::time::Instant::now() - begin;
+                    let duration = begin.elapsed();
 
-                    println!("perft took: {:?}", duration);
+                    println!("perft took: {duration:?}");
                 }
                 Err(_) => {
-                    println!("error while parsing numerical value")
+                    println!("error while parsing numerical value");
                 }
             }
         }
@@ -59,7 +63,7 @@ fn main() {
         else if args[0] == "checkmask" {
             use crate::chessboard::board::move_generation::MoveGenerator;
             let (double_check, all_pieces) = MoveGenerator::get_check_mask(&board);
-            println!("double_check: {}\n{}", double_check, BitBoard::new(all_pieces));
+            println!("double_check: {double_check}\n{}", BitBoard::new(all_pieces));
         }
         else if args[0] == "pinmask" {
             use crate::chessboard::board::move_generation::MoveGenerator;
@@ -71,22 +75,15 @@ fn main() {
         else if args[0] == "fen" {
             println!("FEN: {}", board.to_fen());
         }
-        else if args.len() == 2 && args[0] == "boards" {
-            use crate::chessboard::board::magics::ROOK_MASK;
-            let square = BoardHelper::text_to_square(&args.last().unwrap()[0..2]);
-            
-            println!("{}", BitBoard::new(ROOK_MASK[square as usize]));
-        }
         else if args.len() == 2 && args[0] == "moves" {
-            let square = BoardHelper::text_to_square(&args.last().unwrap()[0..2]);
-            board.print_legal_moves_for_square(square);
+            if let Some(square_str) = args.last() {
+                let square = BoardHelper::text_to_square(&square_str[0..2]);
+                board.print_legal_moves_for_square(square);
+            }
         }
         else if &line == "quit" {
             return;
         }
-        else if BoardHelper::is_valid_uci_move(&line) {
-            board.make_move_uci(&line);
-        }   
         else if &line == "cpu-ins" {
             println!("Allowed cpu instruction sets:");
             println!("\tAVX={}", cfg!(target_feature = "avx"));
@@ -96,6 +93,10 @@ fn main() {
             println!("\tSSE3={}", cfg!(target_feature = "sse3"));
             println!("\tSSE4.1={}", cfg!(target_feature = "sse4.1"));
             println!("\tSSE4.2={}", cfg!(target_feature = "sse4.2"));
+        }
+        else if BoardHelper::is_valid_uci_move(&line) && board.make_move_uci(&line).is_some() {}   
+        else if board.make_move_pgn(&line).is_some() {
+            println!("PGN: made move '{line}'");
         }
         else {
             println!("invalid command :^(");

@@ -1,11 +1,10 @@
 
 use super::ChessBoard;
 
-
-use crate::chessboard::bitboard::{BitBoard, PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
+use crate::chessboard::bitboard::{PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
 use crate::chessboard::board_helper::{BoardHelper, Square};
 use crate::chessboard::chessmove::{Move,MoveFlag};
-use crate::chessboard::piece::{Piece, PieceColor, PieceType};
+use crate::chessboard::piece::{PieceColor, PieceType};
 use crate::chessboard::board::magics::{get_bishop_magic, get_rook_magic};
 
 impl ChessBoard {
@@ -101,7 +100,7 @@ impl MoveGenerator {
             // King Side
             if board.castling_rights[rights_idx] {
                 const ROOK_LOCATION_MASK: [u64; 2] = [1u64 << (Square::H1 as u64), 1u64 << (Square::H8 as u64)];
-                const EMPTY_SQUARES: [u64; 2] = [0b1100000, 0b1100000 << 7*8];
+                const EMPTY_SQUARES: [u64; 2] = [0b1100000, 0b1100000 << (7*8)];
 
                 let are_empty = all_pieces & EMPTY_SQUARES[color_idx] == 0;
                 let are_attacked = attack_mask & EMPTY_SQUARES[color_idx] != 0;
@@ -114,8 +113,8 @@ impl MoveGenerator {
             // Queen Side
             if board.castling_rights[rights_idx+1] {
                 const ROOK_LOCATION_MASK: [u64; 2] = [1u64 << (Square::A1 as u64), 1u64 << (Square::A8 as u64)];
-                const EMPTY_SQUARES: [u64; 2] = [0b1110, 0b1110 << 7*8];
-                const NON_ATTACKED_MASK: [u64; 2] = [0b1100, 0b1100 << 7*8];
+                const EMPTY_SQUARES: [u64; 2] = [0b1110, 0b1110 << (7*8)];
+                const NON_ATTACKED_MASK: [u64; 2] = [0b1100, 0b1100 << (7*8)];
 
                 let are_empty = all_pieces & EMPTY_SQUARES[color_idx] == 0;
                 let are_attacked = attack_mask & NON_ATTACKED_MASK[color_idx] != 0;
@@ -421,14 +420,14 @@ impl MoveGenerator {
     fn xray_rook_attacks(occupied: u64, mut blockers: u64, rook_square: i32) -> u64 {
         let attacks = get_rook_magic(rook_square, blockers);
         blockers &= attacks;
-        return attacks ^ get_rook_magic(rook_square, occupied ^ blockers);
+        attacks ^ get_rook_magic(rook_square, occupied ^ blockers)
     }
 
     #[inline(always)]
     fn xray_bishop_attacks(occupied: u64, mut blockers: u64, bishop_square: i32) -> u64 {
         let attacks = get_bishop_magic(bishop_square, blockers);
         blockers &= attacks;
-        return attacks ^ get_bishop_magic(bishop_square, occupied ^ blockers);
+        attacks ^ get_bishop_magic(bishop_square, occupied ^ blockers)
     }
 }
 

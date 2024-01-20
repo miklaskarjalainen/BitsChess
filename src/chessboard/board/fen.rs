@@ -3,7 +3,9 @@ use super::{ChessBoard, CHESSBOARD_WIDTH};
 use crate::chessboard::board_helper::BoardHelper;
 use crate::chessboard::piece::{Piece, PieceColor, PieceType};
 
+#[allow(dead_code)]
 pub const STARTPOS_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+#[allow(dead_code)]
 pub const STARTPOS_FEN_BLACK: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
 
 #[derive(Debug, PartialEq)]
@@ -33,7 +35,7 @@ impl ChessBoard {
                     x += num as i32;
                 }
                 else if ch != '/' {
-                    self.set_piece(y * CHESSBOARD_WIDTH + x, Piece::from_char(ch));
+                    let _ =  self.set_piece(y * CHESSBOARD_WIDTH + x, Piece::from_char(ch));
                     x += 1;
                 }
 
@@ -122,14 +124,14 @@ impl ChessBoard {
                 else {
                     let piece_char = piece.to_char();
                     if empty_counter != 0 {
-                        fen.push((('0' as u8) + empty_counter) as char);
+                        fen.push(((b'0') + empty_counter) as char);
                         empty_counter = 0;
                     }
                     fen.push(piece_char);
                 }
             }
             if empty_counter != 0 {
-                fen.push((('0' as u8) + empty_counter) as char);
+                fen.push((b'0' + empty_counter) as char);
                 empty_counter = 0;
             }
             fen.push('/')
@@ -216,7 +218,7 @@ mod tests {
     fn test_to_fen_start_pos() {
         let mut board = ChessBoard::new();
         board.parse_fen(STARTPOS_FEN).expect("valid fen");
-        board.make_move_uci("e2e4");
+        board.make_move_uci("e2e4").expect("valid move");
         assert_eq!(board.to_fen(), "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     }
 

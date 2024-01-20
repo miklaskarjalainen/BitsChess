@@ -1,5 +1,4 @@
 use lazy_static::lazy_static;
-use super::board_helper::BoardHelper;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BitBoard(u64);
@@ -30,16 +29,16 @@ lazy_static! {
 
     pub static ref KNIGHT_ATTACKS: [u64; 64] = {
         let mut map = [0; 64];
-        for square in 0..64 {
-            map[square] = BitBoard::get_knight_attack(square as i32);
+        for (square, attack) in map.iter_mut().enumerate() {
+            *attack = BitBoard::get_knight_attack(square as i32);
         }
         map
     };
 
     pub static ref KING_ATTACKS: [u64; 64] = {
         let mut map = [0; 64];
-        for square in 0..64 {
-            map[square] = BitBoard::get_king_attack(square as i32);
+        for (square, attack) in map.iter_mut().enumerate() {
+            *attack = BitBoard::get_king_attack(square as i32);
         }
         map
     };
@@ -98,48 +97,57 @@ impl BitBoard {
     }
 
     #[inline(always)]
-    pub const fn get_bit(&self, bit: i32) -> bool {
-        return ((self.0 >> bit) & 0b1) == 1;
+    #[allow(dead_code)]
+    pub const fn get_bit(self, bit: i32) -> bool {
+        ((self.0 >> bit) & 0b1) == 1
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn set_bit(&mut self, bit: i32) {
         self.0 |= 0b1 << bit;
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn clear_bit(&mut self, bit: i32) {
         self.0 &= !(0b1 << bit);
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn toggle_bit(&mut self, bit: i32) {
         self.0 ^= 0b1 << bit;
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn set_bits(&mut self, bits: u64) {
         self.0 |= bits;
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn clear_bits(&mut self, bits: u64) {
         self.0 &= !bits;
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn toggle_bits(&mut self, bits: u64) {
         self.0 ^= bits;
     }
 
     #[inline(always)]
-    pub const fn get_masked(&self, mask: u64) -> u64 {
-        return self.0 & mask;
+    #[allow(dead_code)]
+    pub const fn get_masked(self, mask: u64) -> u64 {
+        self.0 & mask
     }
 
     #[inline(always)]
-    pub const fn get_bits(&self) -> u64 {
-        return self.0;
+    #[allow(dead_code)]
+    pub const fn get_bits(self) -> u64 {
+        self.0
     }
 
     fn get_pawn_attack(side: PieceColor, square: i32) -> u64 {
