@@ -36,11 +36,14 @@ impl MoveFlag {
     }
 }
 
-
-/// Move is represented with 16 bits (0bFFFFDDDDDDSSSSSS)
+/// # Move is represented with 16 bits
 /// Where the first 0..=5 bits represent the square a piece is moving from (source/from),
 /// 6..=11 bits represent the square the piece is moving to (destination/to) and
 /// 12..=15 bits represent the flags of the move.  
+/// 
+///    111111  
+///    5432109876543210  
+/// (0bFFFFDDDDDDSSSSSS) -> S = source_square D = destination_square F = flag
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Move(pub u16);
 
