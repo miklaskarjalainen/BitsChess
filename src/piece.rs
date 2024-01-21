@@ -398,10 +398,10 @@ impl Piece {
     /// assert_eq!(white_queen.is_white(), true);
     /// ```
     #[must_use]
-    pub fn from_char(ch: char) -> Piece {
+    pub const fn from_char(ch: char) -> Piece {
         let mut piece = Piece::new(0);
         piece.0 |= (PieceType::from_char(ch) as u8) & 0b111; // Piece Type
-        if !ch.is_uppercase() {
+        if !ch.is_ascii_uppercase() {
             piece.0 |= 0b1 << 7;
         }
         
