@@ -2,7 +2,7 @@ use crate::bitschess::board_helper::BoardHelper;
 use crate::piece::Piece;
 
 #[repr(u8)]
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MoveFlag {
     None          = 0,
     EnPassant     = 1,
@@ -17,7 +17,7 @@ pub enum MoveFlag {
 impl MoveFlag {
     #[must_use]
     #[inline(always)]
-    pub const fn from_u8(f: u8) -> MoveFlag {
+    pub const fn from_u8(f: u8) -> Self {
         unsafe {
             std::mem::transmute(f & 0b111)
         }
@@ -31,7 +31,7 @@ impl MoveFlag {
     
     #[must_use]
     #[inline(always)]
-    pub const fn eq_const(self, other: MoveFlag) -> bool {
+    pub const fn eq_const(self, other: Self) -> bool {
         self.to_u8() == other.to_u8()
     }
 }
@@ -44,7 +44,7 @@ impl MoveFlag {
 ///    111111  
 ///    5432109876543210  
 /// (0bFFFFDDDDDDSSSSSS) -> S = source_square D = destination_square F = flag
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Move(pub u16);
 
 impl Move {
@@ -228,7 +228,7 @@ impl Move {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ReversibleMove {
     pub board_move: Move,
     pub captured: Piece,
@@ -243,7 +243,7 @@ pub struct ReversibleMove {
 
 impl ReversibleMove {
     #[must_use]
-    pub fn new(board_move: Move, captured: Piece, en_passant_square: i32, castling: [bool; 4], half_move: u8, zobrist_hash: u64, repetition_saved: bool) -> Self { 
+    pub const fn new(board_move: Move, captured: Piece, en_passant_square: i32, castling: [bool; 4], half_move: u8, zobrist_hash: u64, repetition_saved: bool) -> Self { 
         Self {
             board_move, 
             captured,

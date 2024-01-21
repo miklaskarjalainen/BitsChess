@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BitBoard(u64);
 
 pub const A_FILE: u64 = 0x0101_0101_0101_0101;
@@ -152,7 +152,7 @@ impl BitBoard {
 
     fn get_pawn_attack(side: PieceColor, square: i32) -> u64 {
         let mut attacks = 0u64;
-        let mut bitboard = BitBoard::new(0);
+        let mut bitboard = Self::new(0);
         bitboard.set_bit(square);
     
         if side == PieceColor::White {
@@ -177,7 +177,7 @@ impl BitBoard {
 
     pub fn get_knight_attack(square: i32) -> u64 {
         let mut attacks = 0u64;
-        let mut bitboard = BitBoard::new(0);
+        let mut bitboard = Self::new(0);
 
         bitboard.set_bit(square);
 
@@ -212,7 +212,7 @@ impl BitBoard {
 
     pub fn get_king_attack(square: i32) -> u64 {
         let mut attacks = 0u64;
-        let mut bitboard = BitBoard::new(0);
+        let mut bitboard = Self::new(0);
 
         bitboard.set_bit(square);
 
@@ -245,7 +245,7 @@ impl BitBoard {
         attacks
     }
 
-    pub fn get_bishop_attack_mask(square: i32, blockers: u64) -> BitBoard {
+    pub fn get_bishop_attack_mask(square: i32, blockers: u64) -> Self {
         let tr = square / 8;
         let tf = square % 8;
 
@@ -267,10 +267,10 @@ impl BitBoard {
             attacks |= 1u64 << (r * 8 + f);
             if ((1 << (r * 8 + f )) & blockers) != 0 { break; }
         }
-        BitBoard(attacks)
+        Self(attacks)
     }
 
-    pub fn get_rook_attack_mask(square: i32, blockers: u64) -> BitBoard {
+    pub fn get_rook_attack_mask(square: i32, blockers: u64) -> Self {
         let tr = square / 8;
         let tf = square % 8;
 
@@ -292,7 +292,7 @@ impl BitBoard {
             attacks |= 1u64 << (tr * 8 + f);
             if ((1 << (tr * 8 + f)) & blockers) != 0 { break; }
         }
-        BitBoard(attacks)
+        Self(attacks)
     }
 }
 

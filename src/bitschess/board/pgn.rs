@@ -4,7 +4,7 @@ use super::fen::STARTPOS_FEN;
 use std::collections::HashMap;
 
 #[allow(dead_code)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum PGNParserError {
     SyntaxError,
 }

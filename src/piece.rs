@@ -1,6 +1,6 @@
 /// # Type  
 /// Represents the type of a chess piece.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum PieceType {
     None   = 0,
@@ -16,7 +16,7 @@ pub enum PieceType {
 /// Used to represent color of pieces and track the current turn.
 /// * [PieceColor::White] = 0
 /// * [PieceColor::Black] = 1
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum PieceColor {
     White = 0,
@@ -36,7 +36,7 @@ impl PieceColor {
     /// ```
     #[must_use]
     #[inline(always)]
-    pub const fn from_u8(val: u8) -> PieceColor {
+    pub const fn from_u8(val: u8) -> Self {
         unsafe { 
             std::mem::transmute(val & 0b1)
         }
@@ -54,7 +54,7 @@ impl PieceColor {
     /// ```
     #[must_use]
     #[inline(always)]
-    pub const fn flipped(self) -> PieceColor {
+    pub const fn flipped(self) -> Self {
         unsafe {
             // Works, because PieceColor uses only 1 bit.
             // 0b1^1 -> 0b0, 0b0^1 -> 0b1
@@ -86,6 +86,7 @@ impl PieceType {
     #[must_use]
     #[deprecated]
     #[inline(always)]
+    #[allow(dead_code)]
     pub const fn get_value(self) -> i32 {
         const PIECE_VALUE:[i32; 7] = [0, 100, 300, 320, 500, 900, 0];
         PIECE_VALUE[self as usize]
@@ -144,15 +145,15 @@ impl PieceType {
     /// assert_eq!(PieceType::from_char('\n'), PieceType::None);
     /// ```
     #[must_use]
-    pub const fn from_char(ch: char) -> PieceType {
+    pub const fn from_char(ch: char) -> Self {
         match ch.to_ascii_lowercase() {
-            'p' => { PieceType::Pawn }
-            'n' => { PieceType::Knight }
-            'b' => { PieceType::Bishop }
-            'r' => { PieceType::Rook }
-            'q' => { PieceType::Queen }
-            'k' => { PieceType::King }
-            _ => { PieceType::None }
+            'p' => { Self::Pawn }
+            'n' => { Self::Knight }
+            'b' => { Self::Bishop }
+            'r' => { Self::Rook }
+            'q' => { Self::Queen }
+            'k' => { Self::King }
+            _ => { Self::None }
         }
     }
 
@@ -172,13 +173,13 @@ impl PieceType {
     #[must_use]
     pub const fn to_char(self) -> char {
         match self {
-            PieceType::Pawn => { 'p' }
-            PieceType::Knight => { 'n' }
-            PieceType::Bishop => { 'b' }
-            PieceType::Rook => { 'r' }
-            PieceType::Queen => { 'q' }
-            PieceType::King => { 'k' }
-            PieceType::None => { ' ' }
+            Self::Pawn => { 'p' }
+            Self::Knight => { 'n' }
+            Self::Bishop => { 'b' }
+            Self::Rook => { 'r' }
+            Self::Queen => { 'q' }
+            Self::King => { 'k' }
+            Self::None => { ' ' }
         }
     }
 
@@ -196,7 +197,7 @@ impl PieceType {
     /// assert_eq!(PieceType::from_u8(6), PieceType::King);
     /// ```
     #[inline(always)]
-    pub const fn from_u8(val: u8) -> PieceType {
+    pub const fn from_u8(val: u8) -> Self {
         unsafe { 
             std::mem::transmute(val & 0b111)
         }
@@ -208,7 +209,7 @@ impl PieceType {
 /// * bits 0-2 are used for [PieceType].
 /// * bits 3-6 are unused.
 /// * bit 7 is used for color (0 is white, 1 is black)
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Piece(pub u8);
 
 impl Piece {
@@ -398,8 +399,8 @@ impl Piece {
     /// assert_eq!(white_queen.is_white(), true);
     /// ```
     #[must_use]
-    pub const fn from_char(ch: char) -> Piece {
-        let mut piece = Piece::new(0);
+    pub const fn from_char(ch: char) -> Self {
+        let mut piece = Self::new(0);
         piece.0 |= (PieceType::from_char(ch) as u8) & 0b111; // Piece Type
         if !ch.is_ascii_uppercase() {
             piece.0 |= 0b1 << 7;

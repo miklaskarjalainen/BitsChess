@@ -8,8 +8,8 @@ struct RepetitionEntry {
 }
 
 impl RepetitionEntry {
-    fn new() -> Self {
-        RepetitionEntry {
+    const fn new() -> Self {
+        Self {
             zobrist_hash: 0,
             repetitions: 0
         }
@@ -47,7 +47,7 @@ impl Default for RepetitionTable {
 
 impl RepetitionTable {
     #[inline(always)]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             entries: [RepetitionEntry::new(); ENTRY_COUNT as usize]
         }

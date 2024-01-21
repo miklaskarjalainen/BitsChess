@@ -17,7 +17,7 @@ pub enum Square {
 
 impl Square {
     #[inline(always)]
-    pub const fn from_u32(f: u32) -> Square {
+    pub const fn from_u32(f: u32) -> Self {
         unsafe {
             std::mem::transmute(f & 0b111111)
         }
@@ -85,7 +85,7 @@ impl BoardHelper {
     #[inline(always)]
     #[allow(dead_code)]
     pub const fn file_and_rank(square: i32 ) -> (i32, i32) {
-        (BoardHelper::get_file(square), BoardHelper::get_rank(square))
+        (Self::get_file(square), Self::get_rank(square))
     }
 
     /// ```(file, rank)```

@@ -385,7 +385,7 @@ impl ChessBoard {
     // Not able to move not counted here.
     #[must_use]
     #[allow(dead_code)]
-    pub fn is_draw(&self) -> bool {
+    pub const fn is_draw(&self) -> bool {
         // 50 move rule
         if self.half_move == 100 {
             return true;
@@ -475,7 +475,7 @@ impl ChessBoard {
 
     #[must_use]
     #[inline(always)]
-    pub fn get_king_square(&self, king_color: PieceColor) -> i32 {
+    pub const fn get_king_square(&self, king_color: PieceColor) -> i32 {
         BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)].get_bits())
     }
 
