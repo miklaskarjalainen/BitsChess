@@ -190,6 +190,10 @@ impl Move {
     /// assert_eq!(m2.get_to_idx(), 60);
     /// assert_eq!(m2.get_flag(), MoveFlag::PromoteQueen);
     /// ```
+    /// 
+    /// # Panics
+    /// If `uci`'s length is not in range of 4..=5
+    /// 
     #[must_use]
     #[allow(dead_code)]
     pub const fn from_uci(uci: &str) -> Self {

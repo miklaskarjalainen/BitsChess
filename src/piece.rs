@@ -92,11 +92,15 @@ impl PieceType {
         PIECE_VALUE[self as usize]
     }
 
-    /// Get's [usize] index for a piece type. Used to index into arrays.
-    /// The piece_type cannot be [PieceType::None] as it will result in 0usize-1.
+    /// Get's [usize] index for a piece type. Used to index into arrays.  
+    /// Pawn = 0, Knight = 1, etc...
+    /// 
+    /// # Panics
+    /// If self is [PieceType::None].
     #[must_use]
     #[inline(always)]
     pub const fn get_index(self) -> usize {
+        assert!(!self.eq_const(Self::None), "cannot be 'PieceType::None'");
         (self as usize) - 1
     }
 
@@ -201,6 +205,10 @@ impl PieceType {
         unsafe { 
             std::mem::transmute(val & 0b111)
         }
+    }
+
+    pub const fn eq_const(self, other: Self) -> bool {
+        (self as u8) == (other as u8)
     }
 }
 
