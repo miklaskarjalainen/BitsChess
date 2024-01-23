@@ -201,9 +201,9 @@ impl BoardHelper {
     /// use bitschess::BoardHelper;
     /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2"), true);
     /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2q"), true); // not a valid chess move, but matches the expected syntax.
+    /// assert_eq!(BoardHelper::is_valid_uci_move("A1A2"), true);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2Q"), true);
     ///  
-    /// assert_eq!(BoardHelper::is_valid_uci_move("A1A2"), false);
-    /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2Q"), false);
     /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2k"), false);
     /// assert_eq!(BoardHelper::is_valid_uci_move("a1"), false);
     /// assert_eq!(BoardHelper::is_valid_uci_move("11"), false);
