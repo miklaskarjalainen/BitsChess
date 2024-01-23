@@ -1,4 +1,4 @@
-use crate::bitschess::board_helper::BoardHelper;
+use crate::board_helper::BoardHelper;
 use crate::piece::Piece;
 
 #[repr(u8)]

@@ -2,9 +2,9 @@
 use super::ChessBoard;
 
 use crate::bitschess::bitboard::{PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
-use crate::bitschess::board_helper::{BoardHelper, Square};
 use crate::bitschess::board::magics::{get_bishop_magic, get_rook_magic};
 
+use crate::board_helper::{BoardHelper, Square};
 use crate::chess_move::{Move,MoveFlag};
 use crate::piece::{PieceColor, PieceType};
 

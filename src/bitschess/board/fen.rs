@@ -1,6 +1,6 @@
 use super::{ChessBoard, CHESSBOARD_WIDTH};
 
-use crate::bitschess::board_helper::BoardHelper;
+use crate::board_helper::BoardHelper;
 use crate::piece::{Piece, PieceColor, PieceType};
 
 #[allow(dead_code)]
@@ -180,7 +180,7 @@ impl ChessBoard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bitschess::board_helper::BoardHelper;
+    use crate::board_helper::BoardHelper;
     use crate::piece::PieceType;
 
     #[test]

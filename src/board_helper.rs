@@ -1,5 +1,6 @@
-use super::board::CHESSBOARD_WIDTH;
+use crate::bitschess::board::CHESSBOARD_WIDTH;
 
+/// # Has functions to help with board indexes and bit manipulation.
 pub struct BoardHelper;
 
 #[repr(u32)]
@@ -12,10 +13,13 @@ pub enum Square {
     A5, B5, C5, D5, E5, F5, G5, H5,
     A6, B6, C6, D6, E6, F6, G6, H6,
     A7, B7, C7, D7, E7, F7, G7, H7,
-    A8, B8, C8, D8, E8, F8, G8, H8
+    A8, B8, C8, D8, E8, F8, G8, H8,
+
+    INVALID = std::u32::MAX
 }
 
 impl Square {
+    /// Constructs a [Square] from [u32].
     #[inline(always)]
     pub const fn from_u32(f: u32) -> Self {
         unsafe {
@@ -25,7 +29,15 @@ impl Square {
 }
 
 impl BoardHelper {
-    // "a1" -> 0, "B2" -> 9
+    /// Constructs a square index from a text.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::text_to_square("a1"), 0);
+    /// assert_eq!(BoardHelper::text_to_square("B2"), 9);
+    /// assert_eq!(BoardHelper::text_to_square("1"), -1); // invalid
+    /// assert_eq!(BoardHelper::text_to_square("a"), -1); // invalid
+    /// ```
     #[must_use]
     pub const fn text_to_square(uci_cmd: &str) -> i32 {
         if uci_cmd.len() < 2 {
@@ -50,12 +62,20 @@ impl BoardHelper {
     #[must_use]
     #[inline(always)]
     pub const fn file_to_idx(file: char) -> i32 {
+        let file = file.to_ascii_lowercase();
+        if file < 'a' || file > 'h' {
+            return -1;
+        }
         (7u8 - (b'h' - (file.to_ascii_lowercase() as u8))) as i32
     }
 
     #[must_use]
     #[inline(always)]
     pub const fn rank_to_idx(rank: char) -> i32 {
+        let rank = rank.to_ascii_lowercase();
+        if rank < '1' || rank > '8' {
+            return -1;
+        }
         if let Some(num) = rank.to_digit(10) {
             return (num as i32) - 1;
         }
@@ -65,6 +85,9 @@ impl BoardHelper {
     #[must_use]
     #[inline(always)]
     pub const fn file_rank_to_idx(file: i32, rank: i32) -> i32 {
+        if file < 0 || file > 7 || rank < 0 || rank > 7 {
+            return -1;
+        }
         rank * CHESSBOARD_WIDTH + file
     }
 
@@ -115,10 +138,27 @@ impl BoardHelper {
         format!("{}{}", file, rank)
     }
     
-    // https://www.chessprogramming.org/BitScan
+    /// Determines the index of the least significant bit.
+    /// Uses the De Bruijn Sequence.  
+    /// <https://www.chessprogramming.org/BitScan>
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::bitscan_forward(0b00001000), 3);
+    /// assert_eq!(BoardHelper::bitscan_forward(0b00001100), 2);
+    /// assert_eq!(BoardHelper::bitscan_forward(0b00001001), 0);
+    /// assert_eq!(BoardHelper::bitscan_forward(0b00100000), 5);
+    /// assert_eq!(BoardHelper::bitscan_forward(0b01011000), 3);
+    /// assert_eq!(BoardHelper::bitscan_forward(0b11100000), 5);
+    /// ```
+    /// 
+    /// # Panics
+    /// BB cannot be 0!
     #[must_use]
     #[inline(always)]
     pub const fn bitscan_forward(bb: u64) -> i32 {
+        assert!(bb != 0);
         const INDEX64: [i32; 64] = [
             0, 47,  1, 56, 48, 27,  2, 60,
             57, 49, 41, 37, 28, 16,  3, 61,
@@ -154,32 +194,40 @@ impl BoardHelper {
         count
     }
 
-    /// e2e4 e7e8q
+    /// Checks if a string matches a syntax of a uci move.  
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2"), true);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2q"), true); // not a valid chess move, but matches the expected syntax.
+    ///  
+    /// assert_eq!(BoardHelper::is_valid_uci_move("A1A2"), false);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2Q"), false);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2k"), false);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("a1"), false);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("11"), false);
+    /// assert_eq!(BoardHelper::is_valid_uci_move("z2x2"), false);
+    /// ```
     #[must_use]
-    pub fn is_valid_uci_move(uci_move: &str) -> bool {
+    pub const fn is_valid_uci_move(uci_move: &str) -> bool {
         if uci_move.len() != 4 && uci_move.len() != 5 {
             return false;
         }
-        
-        let chars: Vec<char> = uci_move.chars().collect();
-        if chars[0] < 'a' || chars[0] > 'h' {
+    
+        let chars = uci_move.as_bytes();
+
+        if BoardHelper::chars_to_square(chars[0] as char, chars[1] as char) == -1 {
             return false;
         }
 
-        if chars[1] < '1' || chars[1] > '9' {
+        if BoardHelper::chars_to_square(chars[2] as char, chars[3] as char) == -1 {
             return false;
         }
 
-        if chars[2] < 'a' || chars[2] > 'h' {
-            return false;
-        }
-
-        if chars[3] < '1' || chars[3] > '9' {
-            return false;
-        }
-
-        if chars.len() == 5 && !(chars[4] == 'q' || chars[4] == 'r' || chars[4] == 'b' || chars[4] == 'n') {
-            return false;
+        if chars.len() == 5 {
+            let prom = chars[4].to_ascii_lowercase();
+            return prom == b'q' || prom == b'r' || prom == b'b' || prom == b'n';
         }
 
         true
@@ -315,5 +363,43 @@ mod tests {
         assert_eq!(BoardHelper::chars_to_square('f', '3'), Square::F3 as i32);
         assert_eq!(BoardHelper::chars_to_square('G', '2'), Square::G2 as i32);
         assert_eq!(BoardHelper::chars_to_square('h', '1'), Square::H1 as i32);
+    }
+
+    #[test]
+    fn test_board_helper_is_valid_uci_move() {
+        // Lower
+        assert_eq!(BoardHelper::is_valid_uci_move("a1a2"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("e2e7"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("a1h8"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("h8a1"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8q"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8n"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8b"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8r"), true);
+        
+        
+        // Upper
+        assert_eq!(BoardHelper::is_valid_uci_move("A1A7"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("E2E7"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("A1H8"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("H8A1"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("E7E8Q"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("E7E8N"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("E7E8B"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("E7E8R"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("E7E8r"), true);
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8R"), true);
+        
+        // Garbage
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8Z"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("e7e8z"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("2e27"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("1234"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("abc"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("11111111"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("e2a"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("e2"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("q2x5"), false);
+        assert_eq!(BoardHelper::is_valid_uci_move("z2e2"), false);
     }
 }

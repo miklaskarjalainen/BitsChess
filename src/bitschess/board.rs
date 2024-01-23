@@ -9,9 +9,8 @@ pub mod zobrist;
 use move_generation::MoveGenerator;
 use repetition_table::RepetitionTable;
 use super::bitboard::BitBoard;
-use super::board_helper::BoardHelper;
-use super::board_helper::Square;
 
+use crate::board_helper::{BoardHelper, Square};
 use crate::chess_move::{Move, MoveFlag, ReversibleMove};
 use crate::piece::{Piece, PieceType, PieceColor};
 
@@ -409,7 +408,7 @@ impl ChessBoard {
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() { return None; }
         
-        let move_made = self.move_history.pop().unwrap();
+        let move_made = self.move_history.pop().expect("?");
         if move_made.repetition_saved {
             self.repetitions.decrement_repetition(self.zobrist_hash);
         }
@@ -541,7 +540,7 @@ impl ChessBoard {
 mod tests {
     use super::*;
     use super::fen::{STARTPOS_FEN, STARTPOS_FEN_BLACK};
-    use super::super::board_helper::BoardHelper;
+    use crate::board_helper::BoardHelper;
 
     const TEST_PROMOTION_FEN: &str = "4k3/2P5/4K3/8/8/8/5p2/8 b - - 0 1";
     
