@@ -51,14 +51,38 @@ impl BoardHelper {
         Self::file_rank_to_idx(file, rank)
     }
 
-    // 'a','1' -> 0, 'B', '2' -> 9
+    /// Returns index for a rank and index.  
+    /// Invalid input will return -1.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::chars_to_square('a', '1'), 0);
+    /// assert_eq!(BoardHelper::chars_to_square('B', '2'), 9);
+    /// 
+    /// assert_eq!(BoardHelper::chars_to_square('a', '9'), -1); // invalid
+    /// assert_eq!(BoardHelper::chars_to_square('i', '1'), -1); // invalid
+    /// assert_eq!(BoardHelper::chars_to_square('a', '0'), -1); // invalid
+    /// assert_eq!(BoardHelper::chars_to_square('h', '0'), -1); // invalid
+    /// ```
     #[must_use]
+    #[inline(always)]
     pub const fn chars_to_square(file: char, rank: char) -> i32 {
         let file = Self::file_to_idx(file);
         let rank = Self::rank_to_idx(rank);
         Self::file_rank_to_idx(file, rank)
     }
 
+    /// Returns the file index from a [char].  
+    /// Invalid input will return -1.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::file_to_idx('a'), 0);
+    /// assert_eq!(BoardHelper::file_to_idx('G'), 6);
+    /// assert_eq!(BoardHelper::file_to_idx('H'), 7);
+    /// assert_eq!(BoardHelper::file_to_idx('Ä'), -1); // invalid
+    /// assert_eq!(BoardHelper::file_to_idx('w'), -1); // invalid
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn file_to_idx(file: char) -> i32 {
@@ -69,19 +93,38 @@ impl BoardHelper {
         (7u8 - (b'h' - (file.to_ascii_lowercase() as u8))) as i32
     }
 
+    /// Returns the rank index from a [char].  
+    /// Invalid input will return -1.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::rank_to_idx('1'), 0);
+    /// assert_eq!(BoardHelper::rank_to_idx('6'), 5);
+    /// assert_eq!(BoardHelper::rank_to_idx('8'), 7);
+    /// assert_eq!(BoardHelper::rank_to_idx('0'), -1); // invalid
+    /// assert_eq!(BoardHelper::rank_to_idx('9'), -1); // invalid
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn rank_to_idx(rank: char) -> i32 {
-        let rank = rank.to_ascii_lowercase();
-        if rank < '1' || rank > '8' {
+        let rank = rank.to_ascii_lowercase() as u8;
+        if rank < b'1' || rank > b'8' {
             return -1;
         }
-        if let Some(num) = rank.to_digit(10) {
-            return (num as i32) - 1;
-        }
-        -1
+        (rank - b'1') as i32
     }
 
+    /// Returns the square index from file and rank index.  
+    /// Invalid inputs will return -1.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::file_rank_to_idx(0, 0), 0);
+    /// assert_eq!(BoardHelper::file_rank_to_idx(5, 2), 21);
+    /// assert_eq!(BoardHelper::file_rank_to_idx(7, 7), 63);
+    /// assert_eq!(BoardHelper::file_rank_to_idx(-1, 6), -1); // invalid
+    /// assert_eq!(BoardHelper::file_rank_to_idx(6, -1), -1); // invalid
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn file_rank_to_idx(file: i32, rank: i32) -> i32 {
@@ -91,19 +134,42 @@ impl BoardHelper {
         rank * CHESSBOARD_WIDTH + file
     }
 
+    /// Returns the rank index from a square index.  
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::get_rank(0), 0);
+    /// assert_eq!(BoardHelper::get_rank(28), 3);
+    /// assert_eq!(BoardHelper::get_rank(63), 7);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn get_rank(square: i32) -> i32 {
         square >> 3
     }
 
+    /// Returns the file index from a square index.  
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::get_file(0), 0);
+    /// assert_eq!(BoardHelper::get_file(28), 4);
+    /// assert_eq!(BoardHelper::get_file(63), 7);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn get_file(square: i32) -> i32 {
         square & 7
     }
 
-    /// ```(file, rank)```
+    /// Returns file and rank indexes from a square index.  
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::file_and_rank(0), (0,0));
+    /// assert_eq!(BoardHelper::file_and_rank(28), (4,3));
+    /// assert_eq!(BoardHelper::file_and_rank(63), (7,7));
+    /// ```
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
@@ -111,7 +177,14 @@ impl BoardHelper {
         (Self::get_file(square), Self::get_rank(square))
     }
 
-    /// ```(file, rank)```
+    /// Returns chars for file and rank from a square index.  
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::square_to_chars(0), ('a','1'));
+    /// assert_eq!(BoardHelper::square_to_chars(28), ('e','4'));
+    /// assert_eq!(BoardHelper::square_to_chars(63), ('h','8'));
+    /// ```
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
@@ -125,7 +198,14 @@ impl BoardHelper {
         (file, rank)
     }
 
-    /// ```outputs: "e4", "a1"```
+    /// Returns square string from a square index.  
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::square_to_string(0), "a1");
+    /// assert_eq!(BoardHelper::square_to_string(28), "e4");
+    /// assert_eq!(BoardHelper::square_to_string(63), "h8");
+    /// ```
     #[must_use]
     #[inline(always)]
     pub fn square_to_string(square: i32) -> String {
@@ -137,10 +217,10 @@ impl BoardHelper {
         let file = (b'a' + Self::get_file(square) as u8) as char;
         format!("{}{}", file, rank)
     }
-    
+
     /// Determines the index of the least significant bit.
     /// Uses the De Bruijn Sequence.  
-    /// <https://www.chessprogramming.org/BitScan>
+    /// <https://www.chessprogramming.org/BitScan>  
     /// 
     /// # Examples
     /// ```rust
@@ -153,50 +233,52 @@ impl BoardHelper {
     /// assert_eq!(BoardHelper::bitscan_forward(0b11100000), 5);
     /// ```
     /// 
-    /// # Panics
-    /// BB cannot be 0!
     #[must_use]
-    #[inline(always)]
+    #[inline(never)]
     pub const fn bitscan_forward(bb: u64) -> i32 {
-        assert!(bb != 0);
-        const INDEX64: [i32; 64] = [
-            0, 47,  1, 56, 48, 27,  2, 60,
-            57, 49, 41, 37, 28, 16,  3, 61,
-            54, 58, 35, 52, 50, 42, 21, 44,
-            38, 32, 29, 23, 17, 11,  4, 62,
-            46, 55, 26, 59, 40, 36, 15, 53,
-            34, 51, 20, 43, 31, 22, 10, 45,
-            25, 39, 14, 33, 19, 30,  9, 24,
-            13, 18,  8, 12,  7,  6,  5, 63
-        ];
-        const DEBRUIJN64: u64 = 0x03f79d71b4cb0a89;
-        assert!(bb != 0);
-        INDEX64[(((bb ^ (bb-1)).wrapping_mul(DEBRUIJN64)) >> 58) as usize]
+        bb.trailing_zeros() as i32
     }
 
+    /// Pops the lsb bit and returns the index of it.
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// let mut bits = 0b101101;
+    /// assert_eq!(BoardHelper::pop_lsb(&mut bits), 0);
+    /// assert_eq!(BoardHelper::pop_lsb(&mut bits), 2);
+    /// assert_eq!(BoardHelper::pop_lsb(&mut bits), 3);
+    /// assert_eq!(BoardHelper::pop_lsb(&mut bits), 5);
+    /// ```
+    /// 
+    /// # Panics
+    /// if bb is 0.
     #[must_use]
     #[inline(always)]
     pub fn pop_lsb(bb: &mut u64) -> i32 {
+        debug_assert!(*bb != 0);
         let pos = Self::bitscan_forward(*bb);
         *bb &= *bb - 1;
         pos
     }
-
+    
+    /// Counts the bits set in a [u64].  
+    /// # Examples  
+    /// ```rust
+    /// use bitschess::BoardHelper;
+    /// assert_eq!(BoardHelper::count_bits(0b1111_1111), 8);
+    /// assert_eq!(BoardHelper::count_bits(0b1100_0011), 4);
+    /// assert_eq!(BoardHelper::count_bits(0b1111_0000), 4);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
-    pub fn count_bits(mut b: u64) -> i32 {
-        let mut count = 0;
-        while b != 0 {
-            count += 1;
-            let _ = Self::pop_lsb(&mut b);
-        }
-        count
+    pub const fn count_bits(b: u64) -> i32 {
+        b.count_ones() as i32
     }
 
     /// Checks if a string matches a syntax of a uci move.  
     /// 
-    /// # Examples
+    /// # Examples  
     /// ```rust
     /// use bitschess::BoardHelper;
     /// assert_eq!(BoardHelper::is_valid_uci_move("a1a2"), true);
@@ -233,7 +315,6 @@ impl BoardHelper {
         true
     }
 }
-
 
 #[cfg(test)]
 mod tests {
