@@ -87,11 +87,11 @@ impl ChessBoard {
         }
         
         // Error checking
-        if self.bitboards[PieceType::King.get_side_index(PieceColor::White)].get_bits() == 0u64 {
+        if self.bitboards[PieceType::King.get_side_index(PieceColor::White)] == 0u64 {
             self.clear();
             return Err(FenParsingError::NoWhiteKing);
         }
-        if self.bitboards[PieceType::King.get_side_index(PieceColor::Black)].get_bits() == 0u64 {
+        if self.bitboards[PieceType::King.get_side_index(PieceColor::Black)] == 0u64 {
             self.clear();
             return Err(FenParsingError::NoBlackKing);
         }

@@ -21,8 +21,8 @@ pub const CHESSBOARD_WIDTH: i32 = 8;
 pub struct ChessBoard {
     // Board representation
     // "masks" for every different type of piece
-    pub bitboards: [BitBoard; 12], // 0 = white pawns, 1 = white knights ... 6 = black pawns, etc
-    pub side_bitboards: [BitBoard; 2],
+    pub bitboards: [u64; 12], // 0 = white pawns, 1 = white knights ... 6 = black pawns, etc
+    pub side_bitboards: [u64; 2],
     pub board: [Piece; 64],
 
     // flags
@@ -108,8 +108,8 @@ impl ChessBoard {
     pub fn new() -> Self {
         let mut x = Self {
             board: [Piece::new(0x0); 64],
-            bitboards: [BitBoard::new(0); 12],
-            side_bitboards: [BitBoard::new(0); 2],
+            bitboards: [0u64; 12],
+            side_bitboards: [0u64; 2],
 
             turn: PieceColor::White,
             en_passant: -1,
@@ -475,7 +475,7 @@ impl ChessBoard {
     #[must_use]
     #[inline(always)]
     pub const fn get_king_square(&self, king_color: PieceColor) -> i32 {
-        BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)].get_bits())
+        BoardHelper::bitscan_forward(self.bitboards[PieceType::King.get_side_index(king_color)])
     }
 
     // returns the piece that was on the square before
@@ -517,21 +517,21 @@ impl ChessBoard {
         assert!(!piece.is_none());
 
         // Bitboard & Zobrist
-        self.bitboards[piece.get_piece_index()].clear_bit(square);
-        self.side_bitboards[piece.get_color() as usize].clear_bit(square);
+        self.bitboards[piece.get_piece_index()] &= !(0b1 << square);
+        self.side_bitboards[piece.get_color() as usize] &= !(0b1 << square);
         self.zobrist_hash ^= piece.get_hash(square);
     }
 
     #[inline(always)]
     const fn get_side_mask(&self, side: PieceColor) -> u64 {
-        self.side_bitboards[side as usize].get_bits()
+        self.side_bitboards[side as usize]
     }
 
     #[inline(always)]
     fn add_to_bitboards(&mut self, piece: Piece, square: i32) {
         // Bitboard
-        self.bitboards[piece.get_piece_index()].set_bit(square);
-        self.side_bitboards[piece.get_color() as usize].set_bit(square);
+        self.bitboards[piece.get_piece_index()] |= 1u64 << square;
+        self.side_bitboards[piece.get_color() as usize] |= 1u64 << square;
         self.zobrist_hash ^= piece.get_hash(square);
     }
 }

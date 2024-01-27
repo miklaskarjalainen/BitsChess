@@ -215,19 +215,19 @@ impl ChessBoard {
         match piece.get_piece_type() {
 
             PieceType::Knight => {
-                attackers = KNIGHT_ATTACKS[to as usize] & self.bitboards[PieceType::Knight.get_side_index(turn)].get_bits();
+                attackers = KNIGHT_ATTACKS[to as usize] & self.bitboards[PieceType::Knight.get_side_index(turn)];
             }
 
             PieceType::Bishop => {
-                attackers = get_bishop_magic(to, blockers) & self.bitboards[PieceType::Bishop.get_side_index(turn)].get_bits();
+                attackers = get_bishop_magic(to, blockers) & self.bitboards[PieceType::Bishop.get_side_index(turn)];
             }
 
             PieceType::Rook => {
-                attackers = get_rook_magic(to, blockers) & self.bitboards[PieceType::Rook.get_side_index(turn)].get_bits();
+                attackers = get_rook_magic(to, blockers) & self.bitboards[PieceType::Rook.get_side_index(turn)];
             }
 
             PieceType::Queen => {
-                attackers = (get_rook_magic(to, blockers) | get_bishop_magic(to, blockers)) & self.bitboards[PieceType::Queen.get_side_index(turn)].get_bits();
+                attackers = (get_rook_magic(to, blockers) | get_bishop_magic(to, blockers)) & self.bitboards[PieceType::Queen.get_side_index(turn)];
             }
 
             // If a pawn made the capture then file is always needed

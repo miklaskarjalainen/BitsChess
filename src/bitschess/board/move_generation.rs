@@ -1,4 +1,3 @@
-
 use super::ChessBoard;
 
 use crate::bitschess::bitboard::{PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
@@ -19,14 +18,14 @@ impl ChessBoard {
     pub fn is_square_in_check(&self, king_color: PieceColor, square: i32) -> bool {
         const ENEMY_BITBOARD: [usize; 2] = [6, 0];
         let enemy_bitboard_idx = ENEMY_BITBOARD[king_color as usize];
-        let all_pieces = self.side_bitboards[0].get_bits() | self.side_bitboards[1].get_bits();
+        let all_pieces = self.side_bitboards[0] | self.side_bitboards[1];
         
-        let pawn_checks   = PAWN_ATTACKS[king_color as usize][square as usize] & self.bitboards[enemy_bitboard_idx].get_bits();
-        let knight_checks = KNIGHT_ATTACKS[square as usize] & self.bitboards[enemy_bitboard_idx+1].get_bits();
-        let king_checks = KING_ATTACKS[square as usize] & self.bitboards[enemy_bitboard_idx+5].get_bits();
+        let pawn_checks   = PAWN_ATTACKS[king_color as usize][square as usize] & self.bitboards[enemy_bitboard_idx];
+        let knight_checks = KNIGHT_ATTACKS[square as usize] & self.bitboards[enemy_bitboard_idx+1];
+        let king_checks = KING_ATTACKS[square as usize] & self.bitboards[enemy_bitboard_idx+5];
 
-        let bishop_checks = get_bishop_magic(square, all_pieces) & (self.bitboards[enemy_bitboard_idx+2].get_bits() | self.bitboards[enemy_bitboard_idx+4].get_bits());
-        let rook_checks   = get_rook_magic(square, all_pieces) & (self.bitboards[enemy_bitboard_idx+3].get_bits() | self.bitboards[enemy_bitboard_idx+4].get_bits());
+        let bishop_checks = get_bishop_magic(square, all_pieces) & (self.bitboards[enemy_bitboard_idx+2] | self.bitboards[enemy_bitboard_idx+4]);
+        let rook_checks   = get_rook_magic(square, all_pieces) & (self.bitboards[enemy_bitboard_idx+3] | self.bitboards[enemy_bitboard_idx+4]);
 
         (pawn_checks | knight_checks | bishop_checks | rook_checks | king_checks) != 0
     }
@@ -66,8 +65,8 @@ impl MoveGenerator {
         // 
         let attack_mask = Self::get_attack_mask(board);
 
-        let friendly_pieces = board.side_bitboards[color_idx].get_bits();
-        let enemy_pieces = board.side_bitboards[enemy_bitboard_idx].get_bits();
+        let friendly_pieces = board.side_bitboards[color_idx];
+        let enemy_pieces = board.side_bitboards[enemy_bitboard_idx];
         let all_pieces = friendly_pieces | enemy_pieces;
         let enemy_or_empty = (!0u64) ^ friendly_pieces;
         let move_filter_mask = if generate_quiet { !0u64 } else { enemy_pieces };
@@ -95,7 +94,7 @@ impl MoveGenerator {
         else if generate_quiet {
             // Castling
             let rights_idx = (color_idx) * 2;
-            let rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)].get_bits();
+            let rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)];
             let square_for_black = (color_idx as i32) * 56;
 
             // King Side
@@ -127,7 +126,7 @@ impl MoveGenerator {
         }
 
         // Knights
-        let mut knights = board.bitboards[PieceType::Knight.get_side_index(board.turn)].get_bits();
+        let mut knights = board.bitboards[PieceType::Knight.get_side_index(board.turn)];
         while knights != 0 {
             let knight_square = BoardHelper::pop_lsb(&mut knights);
             // Pinned knight cannot move
@@ -138,7 +137,7 @@ impl MoveGenerator {
         } 
         
         // Bishop
-        let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(board.turn)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn)].get_bits();
+        let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(board.turn)] | board.bitboards[PieceType::Queen.get_side_index(board.turn)];
         while bishops != 0 {
             let bishop_square = BoardHelper::pop_lsb(&mut bishops);
             let bishop_attacks = get_bishop_magic(bishop_square, all_pieces) & enemy_or_empty & check_mask & move_filter_mask;
@@ -153,7 +152,7 @@ impl MoveGenerator {
         } 
 
         // Rook
-        let mut rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn)].get_bits();
+        let mut rooks = board.bitboards[PieceType::Rook.get_side_index(board.turn)] | board.bitboards[PieceType::Queen.get_side_index(board.turn)];
         while rooks != 0 {
             let rook_square = BoardHelper::pop_lsb(&mut rooks);
             let rook_attacks = get_rook_magic(rook_square, all_pieces) & enemy_or_empty & check_mask & move_filter_mask;
@@ -168,7 +167,7 @@ impl MoveGenerator {
         }
 
         // Pawns
-        let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(board.turn)].get_bits();
+        let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(board.turn)];
         while pawns != 0 {
             let pawn_square = BoardHelper::pop_lsb(&mut pawns);
 
@@ -225,7 +224,7 @@ impl MoveGenerator {
                     
                     // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1
                     if BoardHelper::get_rank(pawn_square) == BoardHelper::get_rank(king_square) {
-                        let opp_rq = board.bitboards[PieceType::Rook.get_side_index(board.turn.flipped())].get_bits() | board.bitboards[PieceType::Queen.get_side_index(board.turn.flipped())].get_bits();
+                        let opp_rq = board.bitboards[PieceType::Rook.get_side_index(board.turn.flipped())] | board.bitboards[PieceType::Queen.get_side_index(board.turn.flipped())];
                         
                         let two_pawn_mask = pawn_moved_mask | (1 << pawn_square);
                         let blockers = all_pieces ^ two_pawn_mask;
@@ -259,12 +258,12 @@ impl MoveGenerator {
         let opponent = board.get_turn().flipped();
         let current_turn = board.get_turn();
 
-        let opp_bq = board.bitboards[PieceType::Bishop.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
-        let opp_rq = board.bitboards[PieceType::Rook  .get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+        let opp_bq = board.bitboards[PieceType::Bishop.get_side_index(opponent)] | board.bitboards[PieceType::Queen.get_side_index(opponent)];
+        let opp_rq = board.bitboards[PieceType::Rook  .get_side_index(opponent)] | board.bitboards[PieceType::Queen.get_side_index(opponent)];
         let king_square = board.get_king_square(current_turn);
 
-        let occupied = board.side_bitboards[0].get_bits() | board.side_bitboards[1].get_bits();
-        let own_pieces = board.side_bitboards[current_turn as usize].get_bits();
+        let occupied = board.side_bitboards[0] | board.side_bitboards[1];
+        let own_pieces = board.side_bitboards[current_turn as usize];
         
         let (mut rook_pins, mut bishop_pins) = (0u64, 0u64);
 
@@ -296,9 +295,9 @@ impl MoveGenerator {
         let opponent = board.get_turn().flipped();
         let side_king = board.get_turn() as usize;
         
-        let king_mask = board.bitboards[side_king * 6 + 5].get_bits();
+        let king_mask = board.bitboards[side_king * 6 + 5];
         let king_square = board.get_king_square(board.get_turn());
-        let blockers = board.side_bitboards[0].get_bits() | board.side_bitboards[1].get_bits(); 
+        let blockers = board.side_bitboards[0] | board.side_bitboards[1];
 
         let mut check_mask = 0u64;
 
@@ -307,7 +306,7 @@ impl MoveGenerator {
 
         // Pawns
         {
-            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(opponent)].get_bits();
+            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(opponent)];
             while pawns != 0 {
                 let pawn_square = BoardHelper::pop_lsb(&mut pawns);
                 
@@ -322,7 +321,7 @@ impl MoveGenerator {
  
         // Knights
         {
-            let mut knights = board.bitboards[PieceType::Knight.get_side_index(opponent)].get_bits();
+            let mut knights = board.bitboards[PieceType::Knight.get_side_index(opponent)];
             while knights != 0 {
                 let knight_square = BoardHelper::pop_lsb(&mut knights);
                 
@@ -337,7 +336,7 @@ impl MoveGenerator {
 
         // Bishop
         {
-            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(opponent)] | board.bitboards[PieceType::Queen.get_side_index(opponent)];
             while bishops != 0 {
                 let bishop_square = BoardHelper::pop_lsb(&mut bishops);
                 
@@ -353,7 +352,7 @@ impl MoveGenerator {
             
         // Rooks
         {
-            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(opponent)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(opponent)].get_bits();
+            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(opponent)] | board.bitboards[PieceType::Queen.get_side_index(opponent)];
             while rooks != 0 {
                 let rook_square = BoardHelper::pop_lsb(&mut rooks);
                 
@@ -372,16 +371,16 @@ impl MoveGenerator {
     
     pub fn get_attack_mask(board: &ChessBoard) -> u64 {
         use crate::bitschess::bitboard;
-        let king_mask = board.bitboards[board.get_turn() as usize * 6 + 5].get_bits();
+        let king_mask = board.bitboards[board.get_turn() as usize * 6 + 5];
         let enemy_color = board.get_turn().flipped();
         
         // erase king from blockers as well
-        let all_pieces = (board.side_bitboards[0].get_bits() | board.side_bitboards[1].get_bits()) ^ king_mask;
+        let all_pieces = (board.side_bitboards[0] | board.side_bitboards[1]) ^ king_mask;
     
         let mut attacks = 0u64;
             
         {
-            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(enemy_color)].get_bits();
+            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(enemy_color)];
             while pawns != 0 {
                 let pawn_square = BoardHelper::pop_lsb(&mut pawns);
                 attacks |= bitboard::PAWN_ATTACKS[enemy_color as usize][pawn_square as usize];
@@ -389,7 +388,7 @@ impl MoveGenerator {
         }
 
         {
-            let mut knights = board.bitboards[PieceType::Knight.get_side_index(enemy_color)].get_bits();
+            let mut knights = board.bitboards[PieceType::Knight.get_side_index(enemy_color)];
             while knights != 0 {
                 let knight_square = BoardHelper::pop_lsb(&mut knights);
                 attacks |= bitboard::KNIGHT_ATTACKS[knight_square as usize];
@@ -397,7 +396,7 @@ impl MoveGenerator {
         }
 
         {
-            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(enemy_color)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(enemy_color)].get_bits();
+            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(enemy_color)] | board.bitboards[PieceType::Queen.get_side_index(enemy_color)];
             while bishops != 0 {
                 let bishop_square = BoardHelper::pop_lsb(&mut bishops);
                 attacks |= get_bishop_magic(bishop_square, all_pieces);
@@ -405,7 +404,7 @@ impl MoveGenerator {
         }
 
         {
-            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(enemy_color)].get_bits() | board.bitboards[PieceType::Queen.get_side_index(enemy_color)].get_bits();
+            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(enemy_color)] | board.bitboards[PieceType::Queen.get_side_index(enemy_color)];
             while rooks != 0 {
                 let rook_square = BoardHelper::pop_lsb(&mut rooks);
                 attacks |= get_rook_magic(rook_square, all_pieces);
