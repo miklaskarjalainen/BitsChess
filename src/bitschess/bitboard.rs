@@ -48,12 +48,12 @@ lazy_static! {
         for from in 0..64 {
             for to in 0..64 {
                 let occupancy = 1u64 << from;
-                let to_bishop_mask   = BitBoard::get_bishop_attack_mask(to, occupancy).get_bits();
-                let to_rook_mask     = BitBoard::get_rook_attack_mask(to, occupancy) .get_bits();
+                let to_bishop_mask   = BitBoard::get_bishop_attack_mask(to, occupancy);
+                let to_rook_mask     = BitBoard::get_rook_attack_mask(to, occupancy);
                 
                 let occupancy_2 = 1u64 << to;
-                let from_bishop_mask = BitBoard::get_bishop_attack_mask(from, occupancy_2).get_bits();
-                let from_rook_mask = BitBoard::get_rook_attack_mask(from, occupancy_2).get_bits();
+                let from_bishop_mask = BitBoard::get_bishop_attack_mask(from, occupancy_2);
+                let from_rook_mask = BitBoard::get_rook_attack_mask(from, occupancy_2);
 
                 if (to_bishop_mask & occupancy) != 0 {
                     map[from as usize][to as usize] = to_bishop_mask & from_bishop_mask;
@@ -150,102 +150,97 @@ impl BitBoard {
         self.0
     }
 
-    fn get_pawn_attack(side: PieceColor, square: i32) -> u64 {
+    const fn get_pawn_attack(side: PieceColor, square: i32) -> u64 {
         let mut attacks = 0u64;
-        let mut bitboard = Self::new(0);
-        bitboard.set_bit(square);
+        let bitboard = 1u64 << square;
     
-        if side == PieceColor::White {
-            if ((bitboard.get_bits() << 7) & NOT_H_FILE) != 0 { 
-                attacks |= bitboard.0 << 7;
+        if side.eq_const(PieceColor::White) {
+            if ((bitboard << 7) & NOT_H_FILE) != 0 { 
+                attacks |= bitboard << 7;
             }
-            if ((bitboard.get_bits() << 9) & NOT_A_FILE) != 0 { 
-                attacks |= bitboard.0 << 9;
+            if ((bitboard << 9) & NOT_A_FILE) != 0 { 
+                attacks |= bitboard << 9;
             }
         }
         else {
-            if ((bitboard.get_bits() >> 7) & NOT_A_FILE) != 0 { 
-                attacks |= bitboard.0 >> 7;
+            if ((bitboard >> 7) & NOT_A_FILE) != 0 { 
+                attacks |= bitboard >> 7;
             }
-            if ((bitboard.get_bits() >> 9) & NOT_H_FILE) != 0 { 
-                attacks |= bitboard.0 >> 9;
+            if ((bitboard >> 9) & NOT_H_FILE) != 0 { 
+                attacks |= bitboard >> 9;
             }
         }
     
         attacks
     }
 
-    pub fn get_knight_attack(square: i32) -> u64 {
+    pub const fn get_knight_attack(square: i32) -> u64 {
         let mut attacks = 0u64;
-        let mut bitboard = Self::new(0);
+        let bitboard = 1u64 << square;
 
-        bitboard.set_bit(square);
-
-        if bitboard.get_masked(NOT_H_FILE << 17) != 0 {
-            attacks |= bitboard.get_bits() >> 17;
+        if bitboard & (NOT_H_FILE << 17) != 0 {
+            attacks |= bitboard >> 17;
         }
-        if bitboard.get_masked(NOT_A_FILE << 15) != 0 {
-            attacks |= bitboard.get_bits() >> 15;
+        if bitboard & (NOT_A_FILE << 15) != 0 {
+            attacks |= bitboard >> 15;
         }
-        if bitboard.get_masked(NOT_HG_FILE << 10) != 0 {
-            attacks |= bitboard.get_bits() >> 10;
+        if bitboard & (NOT_HG_FILE << 10) != 0 {
+            attacks |= bitboard >> 10;
         }
-        if bitboard.get_masked(NOT_AB_FILE << 6) != 0 {
-            attacks |= bitboard.get_bits() >> 6;
+        if bitboard & (NOT_AB_FILE << 6) != 0 {
+            attacks |= bitboard >> 6;
         }
 
-        if bitboard.get_masked(NOT_A_FILE >> 17) != 0 {
-            attacks |= bitboard.get_bits() << 17;
+        if bitboard & (NOT_A_FILE >> 17) != 0 {
+            attacks |= bitboard << 17;
         }
-        if bitboard.get_masked(NOT_H_FILE >> 15) != 0 {
-            attacks |= bitboard.get_bits() << 15;
+        if bitboard & (NOT_H_FILE >> 15) != 0 {
+            attacks |= bitboard << 15;
         }
-        if bitboard.get_masked(NOT_AB_FILE >> 10) != 0 {
-            attacks |= bitboard.get_bits() << 10;
+        if bitboard & (NOT_AB_FILE >> 10) != 0 {
+            attacks |= bitboard << 10;
         }
-        if bitboard.get_masked(NOT_HG_FILE >> 6) != 0 {
-            attacks |= bitboard.get_bits() << 6;
+        if bitboard & (NOT_HG_FILE >> 6) != 0 {
+            attacks |= bitboard << 6;
         }
 
         attacks
     }
 
-    pub fn get_king_attack(square: i32) -> u64 {
+    pub const fn get_king_attack(square: i32) -> u64 {
         let mut attacks = 0u64;
-        let mut bitboard = Self::new(0);
+        let bitboard = 1u64 << square;
 
-        bitboard.set_bit(square);
-
-        if (bitboard.get_bits() >> 8) != 0 {
-            attacks |= bitboard.get_bits() >> 8;
+        if (bitboard >> 8) != 0 {
+            attacks |= bitboard >> 8;
         }
-        if ((bitboard.get_bits() >> 7) & NOT_A_FILE) != 0 {
-            attacks |= bitboard.get_bits() >> 7;
+        if ((bitboard >> 7) & NOT_A_FILE) != 0 {
+            attacks |= bitboard >> 7;
         }
-        if ((bitboard.get_bits() >> 9) & NOT_H_FILE) != 0 {
-            attacks |= bitboard.get_bits() >> 9;
+        if ((bitboard >> 9) & NOT_H_FILE) != 0 {
+            attacks |= bitboard >> 9;
         }
-        if ((bitboard.get_bits() >> 1) & NOT_H_FILE) != 0 {
-            attacks |= bitboard.get_bits() >> 1;
+        if ((bitboard >> 1) & NOT_H_FILE) != 0 {
+            attacks |= bitboard >> 1;
         }
 
-        if (bitboard.get_bits() << 8) != 0 {
-            attacks |= bitboard.get_bits() << 8;
+        if (bitboard << 8) != 0 {
+            attacks |= bitboard << 8;
         }
-        if ((bitboard.get_bits() << 7) & NOT_H_FILE) != 0 {
-            attacks |= bitboard.get_bits() << 7;
+        if ((bitboard << 7) & NOT_H_FILE) != 0 {
+            attacks |= bitboard << 7;
         }
-        if ((bitboard.get_bits() << 9) & NOT_A_FILE) != 0 {
-            attacks |= bitboard.get_bits() << 9;
+        if ((bitboard << 9) & NOT_A_FILE) != 0 {
+            attacks |= bitboard << 9;
         }
-        if ((bitboard.get_bits() << 1) & NOT_A_FILE) != 0 {
-            attacks |= bitboard.get_bits() << 1;
+        if ((bitboard << 1) & NOT_A_FILE) != 0 {
+            attacks |= bitboard << 1;
         }
 
         attacks
     }
 
-    pub fn get_bishop_attack_mask(square: i32, blockers: u64) -> Self {
+    pub fn get_bishop_attack_mask(square: i32, blockers: u64) -> u64 {
         let tr = square / 8;
         let tf = square % 8;
 
@@ -267,10 +262,11 @@ impl BitBoard {
             attacks |= 1u64 << (r * 8 + f);
             if ((1 << (r * 8 + f )) & blockers) != 0 { break; }
         }
-        Self(attacks)
+
+        attacks
     }
 
-    pub fn get_rook_attack_mask(square: i32, blockers: u64) -> Self {
+    pub fn get_rook_attack_mask(square: i32, blockers: u64) -> u64 {
         let tr = square / 8;
         let tf = square % 8;
 
@@ -292,7 +288,7 @@ impl BitBoard {
             attacks |= 1u64 << (tr * 8 + f);
             if ((1 << (tr * 8 + f)) & blockers) != 0 { break; }
         }
-        Self(attacks)
+        attacks
     }
 }
 

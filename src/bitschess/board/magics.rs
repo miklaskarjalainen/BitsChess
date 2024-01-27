@@ -45,7 +45,7 @@ lazy_static!{
             
             for b in blockers {
                 let key = magic_index(ROOK_MAGICS[square as usize], b, ROOK_SHIFTS[square as usize]);
-                map[square as usize][key] = BitBoard::get_rook_attack_mask(square, b).get_bits();
+                map[square as usize][key] = BitBoard::get_rook_attack_mask(square, b);
             }
         }
         map
@@ -68,7 +68,7 @@ lazy_static!{
             
             for b in blockers {
                 let key = magic_index(BISHOP_MAGICS[square as usize], b, BISHOP_SHIFTS[square as usize]);
-                map[square as usize][key] = BitBoard::get_bishop_attack_mask(square, b).get_bits();
+                map[square as usize][key] = BitBoard::get_bishop_attack_mask(square, b);
             }
         }
         map
@@ -175,7 +175,7 @@ mod tests {
             for b in blockers {
                 let idx = magic_index(ROOK_MAGICS[square as usize], b, ROOK_SHIFTS[square as usize]);
 
-                let magic_mask = BitBoard::new(ROOK_ATTACK_MAP[square as usize][idx]);
+                let magic_mask = ROOK_ATTACK_MAP[square as usize][idx];
                 let expected_mask = BitBoard::get_rook_attack_mask(square, b);
                 
                 if magic_mask != expected_mask {
@@ -198,7 +198,7 @@ mod tests {
 
             for b in blockers {
                 let idx = magic_index(ROOK_MAGICS[square as usize], b, ROOK_SHIFTS[square as usize]);
-                let mask = BitBoard::get_rook_attack_mask(square, b).get_bits();
+                let mask = BitBoard::get_rook_attack_mask(square, b);
 
                 if let Some(other_mask) = square_indexes.get(&idx) {
                     assert_eq!(*other_mask, mask, "idx: [{}]", idx);
@@ -218,7 +218,7 @@ mod tests {
             for b in blockers {
                 let idx = magic_index(BISHOP_MAGICS[square as usize], b, BISHOP_SHIFTS[square as usize]);
 
-                let magic_mask = BitBoard::new(BISHOP_ATTACK_MAP[square as usize][idx]);
+                let magic_mask = BISHOP_ATTACK_MAP[square as usize][idx];
                 let expected_mask = BitBoard::get_bishop_attack_mask(square, b);
                 
                 if magic_mask != expected_mask {
@@ -241,7 +241,7 @@ mod tests {
 
             for b in blockers {
                 let idx = magic_index(BISHOP_MAGICS[square as usize], b, BISHOP_SHIFTS[square as usize]);
-                let mask = BitBoard::get_bishop_attack_mask(square, b).get_bits();
+                let mask = BitBoard::get_bishop_attack_mask(square, b);
 
                 if let Some(other_mask) = square_indexes.get(&idx) {
                     assert_eq!(*other_mask, mask, "idx: [{}]", idx);

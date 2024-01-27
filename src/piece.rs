@@ -79,6 +79,18 @@ impl PieceColor {
     pub fn flip(&mut self) {
         *self = self.flipped();
     }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn to_u8(self) -> u8 {
+        self as u8
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn eq_const(self, other: Self) -> bool {
+        self.to_u8() == other.to_u8()
+    }
 }
 
 impl PieceType {
