@@ -1,8 +1,5 @@
 use lazy_static::lazy_static;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct BitBoard(u64);
-
 pub const A_FILE: u64 = 0x0101_0101_0101_0101;
 pub const B_FILE: u64 = A_FILE << 1;
 pub const AB_FILE: u64 = A_FILE | B_FILE;
@@ -67,9 +64,10 @@ lazy_static! {
     };
 }
 
-impl std::fmt::Display for BitBoard {
+pub struct BitBoard;
 
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl BitBoard {
+    pub fn pretty(bits: u64) -> String {
         let mut str = String::from("");
         
         str.push_str("  a b c d e f g h\n");
@@ -77,77 +75,14 @@ impl std::fmt::Display for BitBoard {
             str.push_str((y+1).to_string().as_str());
             str.push(' ');
             for x in 0..8 {
-                let bit = self.get_bit(y * 8 + x);
+                let bit = (bits >> (y * 8 + x)) & 1 == 1;
                 str.push(if bit {'1'} else {'0'});
                 str.push('|');
             }
             str.push('\n');
         }
         str.push_str("  a b c d e f g h\n");
-
-        formatter.pad(str.as_str())
-    }
-
-}
-
-impl BitBoard {
-    #[inline(always)]
-    pub const fn new(bits: u64) -> Self {
-        Self(bits)
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub const fn get_bit(self, bit: i32) -> bool {
-        ((self.0 >> bit) & 0b1) == 1
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn set_bit(&mut self, bit: i32) {
-        self.0 |= 0b1 << bit;
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn clear_bit(&mut self, bit: i32) {
-        self.0 &= !(0b1 << bit);
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn toggle_bit(&mut self, bit: i32) {
-        self.0 ^= 0b1 << bit;
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn set_bits(&mut self, bits: u64) {
-        self.0 |= bits;
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn clear_bits(&mut self, bits: u64) {
-        self.0 &= !bits;
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn toggle_bits(&mut self, bits: u64) {
-        self.0 ^= bits;
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub const fn get_masked(self, mask: u64) -> u64 {
-        self.0 & mask
-    }
-
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub const fn get_bits(self) -> u64 {
-        self.0
+        str
     }
 
     const fn get_pawn_attack(side: PieceColor, square: i32) -> u64 {
@@ -296,50 +231,5 @@ impl BitBoard {
 mod bitboard_tests {
     use super::BitBoard;
 
-    #[test]
-    fn test_set_bits_0() {
-        let mut bits = BitBoard(0);
-        bits.set_bit(5);
-        assert_eq!(bits.0, 0b100000);
-        bits.set_bit(4);
-        assert_eq!(bits.0, 0b110000);
-        bits.set_bit(3);
-        assert_eq!(bits.0, 0b111000);
-        bits.set_bit(2);
-        assert_eq!(bits.0, 0b111100);
-        bits.set_bit(1);
-        assert_eq!(bits.0, 0b111110);
-        bits.set_bit(0);
-        assert_eq!(bits.0, 0b111111);
-    }
-
-    #[test]
-    fn test_clear_bits_0() {
-        let mut bits = BitBoard(0b111111);
-        
-        bits.clear_bit(5);
-        assert_eq!(bits.0, 0b011111);
-        bits.clear_bit(4);
-        assert_eq!(bits.0, 0b001111);
-        bits.clear_bit(3);
-        assert_eq!(bits.0, 0b000111);
-        bits.clear_bit(2);
-        assert_eq!(bits.0, 0b000011);
-        bits.clear_bit(1);
-        assert_eq!(bits.0, 0b000001);
-        bits.clear_bit(0);
-        assert_eq!(bits.0, 0b000000);
-    }
-
-    #[test]
-    fn test_get_bits_0() {
-        let bits = BitBoard(0b101010);
-        
-        assert_eq!(bits.get_bit(5), true);
-        assert_eq!(bits.get_bit(4), false);
-        assert_eq!(bits.get_bit(3), true);
-        assert_eq!(bits.get_bit(2), false);
-        assert_eq!(bits.get_bit(1), true);
-        assert_eq!(bits.get_bit(0), false);
-    }
+    
 }

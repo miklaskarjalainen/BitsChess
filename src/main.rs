@@ -61,19 +61,20 @@ fn main() {
         else if args[0] == "attackmask" {
             use crate::bitschess::board::move_generation::MoveGenerator;
             let atk = MoveGenerator::get_attack_mask(&board);
-            println!("{}", BitBoard::new(atk));
+            println!("{}", BitBoard::pretty(atk));
         }
         else if args[0] == "checkmask" {
             use crate::bitschess::board::move_generation::MoveGenerator;
             let (double_check, all_pieces) = MoveGenerator::get_check_mask(&board);
-            println!("double_check: {double_check}\n{}", BitBoard::new(all_pieces));
+            println!("double_check: {double_check}\n {}", BitBoard::pretty(all_pieces));
         }
         else if args[0] == "pinmask" {
             use crate::bitschess::board::move_generation::MoveGenerator;
             let (hv, d12) = MoveGenerator::get_pinned_mask(&board);
 
-            println!("HorizontalVertical: \n{}", BitBoard::new(hv));
-            println!("Diagonal: \n{}", BitBoard::new(d12));
+            println!("HorizontalVertical: \n{}", BitBoard::pretty(hv));
+            
+            println!("Diagonal: \n{}", BitBoard::pretty(d12));
         }
         else if args[0] == "fen" {
             println!("FEN: {}", board.to_fen());
@@ -96,6 +97,7 @@ fn main() {
             println!("\tSSE3={}", cfg!(target_feature = "sse3"));
             println!("\tSSE4.1={}", cfg!(target_feature = "sse4.1"));
             println!("\tSSE4.2={}", cfg!(target_feature = "sse4.2"));
+            println!("\tBMI2={}", cfg!(target_feature = "bmi2"));
         }
         else if BoardHelper::is_valid_uci_move(&line) && board.make_move_uci(&line).is_some() {}   
         else if board.make_move_pgn(&line).is_some() {
