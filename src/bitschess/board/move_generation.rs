@@ -9,13 +9,13 @@ use crate::piece::{PieceColor, PieceType};
 
 impl ChessBoard {
     #[inline(always)]
-    pub fn is_king_in_check(&self, king_color: PieceColor) -> bool {
+    pub const fn is_king_in_check(&self, king_color: PieceColor) -> bool {
         let king_square = self.get_king_square(king_color);
         self.is_square_in_check(king_color, king_square)
     }
 
     // https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
-    pub fn is_square_in_check(&self, king_color: PieceColor, square: i32) -> bool {
+    pub const fn is_square_in_check(&self, king_color: PieceColor, square: i32) -> bool {
         const ENEMY_BITBOARD: [usize; 2] = [6, 0];
         let enemy_bitboard_idx = ENEMY_BITBOARD[king_color as usize];
         let all_pieces = self.side_bitboards[0] | self.side_bitboards[1];
@@ -417,14 +417,14 @@ impl MoveGenerator {
 
     // https://www.chessprogramming.org/X-ray_Attacks_(Bitboards)#ModifyingOccupancy
     #[inline(always)]
-    fn xray_rook_attacks(occupied: u64, mut blockers: u64, rook_square: i32) -> u64 {
+    const fn xray_rook_attacks(occupied: u64, mut blockers: u64, rook_square: i32) -> u64 {
         let attacks = get_rook_magic(rook_square, blockers);
         blockers &= attacks;
         attacks ^ get_rook_magic(rook_square, occupied ^ blockers)
     }
 
     #[inline(always)]
-    fn xray_bishop_attacks(occupied: u64, mut blockers: u64, bishop_square: i32) -> u64 {
+    const fn xray_bishop_attacks(occupied: u64, mut blockers: u64, bishop_square: i32) -> u64 {
         let attacks = get_bishop_magic(bishop_square, blockers);
         blockers &= attacks;
         attacks ^ get_bishop_magic(bishop_square, occupied ^ blockers)
