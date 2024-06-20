@@ -234,9 +234,16 @@ impl BoardHelper {
     /// ```
     /// 
     #[must_use]
-    #[inline(never)]
+    #[inline(always)]
     pub const fn bitscan_forward(bb: u64) -> i32 {
-        bb.trailing_zeros() as i32
+        // https://godbolt.org/z/E5vYKh3dj
+        // casting to u64/usize might save 1 asm instructions :D
+        // perft 7 on my laptop
+        // 249.0s inlined, if statement
+        // 332.0s inlined, no ifstatement
+        // 343.0s no-inline, if statement
+        // 344.7s no-inline, no ifstatement
+        if bb == 0 { 0 } else { bb.trailing_zeros() as i32 }
     }
 
     /// Pops the lsb bit and returns the index of it.
