@@ -4,11 +4,15 @@ impl ChessBoard {
 
     /// https://www.chessprogramming.org/Perft
     pub fn perft(&mut self, depth: u32, print: bool) -> u64 {
-        if depth == 0 { 
-            return 1u64; 
+        debug_assert!(depth >= 1);
+        
+        // Uses bulk-counting explained at the website mention earlier.
+        let moves = self.get_legal_moves();
+        
+        if depth == 1 { 
+            return moves.len() as u64; 
         }
 
-        let moves = self.get_legal_moves();
         let mut positions = 0u64;
         for m in moves {
             self.make_move(m, true);
@@ -64,13 +68,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "SLOW"]
     fn test_chess_board_perft_startpos_5() {
         assert_eq!(_test_do_perft(STARTPOS_FEN, 5), 4865609);
     }
 
     #[test]
-    #[ignore = "SLOW"]
     fn test_chess_board_perft_startpos_6() {
         assert_eq!(_test_do_perft(STARTPOS_FEN, 6), 119060324);
     }
@@ -186,7 +188,6 @@ mod tests {
     }
     
     #[test]
-    #[ignore = "SLOW"]
     fn test_chess_board_perft_position6_5() {
         assert_eq!(_test_do_perft(POSITION_6, 5), 164075551);
     }
