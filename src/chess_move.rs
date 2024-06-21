@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::board_helper::BoardHelper;
 use crate::piece::Piece;
 
@@ -342,6 +344,53 @@ impl MoveContainer {
         }
     }
     
+    #[inline(always)]
+    pub fn get(&self, i: usize) -> Option<Move> {
+        if i < self.size {
+            return Some( unsafe { self.get_unchecked(i) } );
+        }
+        None
+    }
+
+    #[inline(always)]
+    pub fn get_mut(&mut self, i: usize) -> Option<&mut Move> {
+        if i < self.size {
+            return Some(unsafe { self.get_unchecked_mut(i) });
+        }
+        None
+    }
+    
+    // For some it might be a bit silly not to return a reference here.
+    // But remember, Move is only 16bits so using an address would take 32 or 64 bits so... more.
+    #[inline(always)]
+    pub unsafe fn get_unchecked(&self, i: usize) -> Move {
+        unsafe {
+            *self.moves.get_unchecked(i)
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn get_unchecked_mut(&mut self, i: usize) -> &mut Move {
+        unsafe {
+            self.moves.get_unchecked_mut(i)
+        }
+    }
+
+    #[inline(always)]
+    pub fn swap(&mut self, a: usize, b: usize) {
+        self.moves.swap(a, b);
+    }
+
+    #[inline(always)]
+    pub unsafe fn swap_unchecked(&mut self, a: usize, b: usize) {
+        unsafe {
+            // Xor swapping most likely will not improve performance since MOV instructions are supposed to be "0-latency".
+            let hold = self.get_unchecked(a);
+            *self.get_unchecked_mut(a) = self.get_unchecked(b);
+            *self.get_unchecked_mut(b) = hold;
+        }
+    }
+
     #[inline(always)]
     pub fn len(&self) -> usize {
         return self.size;
