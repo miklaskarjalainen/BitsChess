@@ -4,7 +4,7 @@ use crate::bitschess::bitboard::{PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS};
 use crate::bitschess::board::magics::{get_bishop_magic, get_rook_magic};
 
 use crate::board_helper::{BoardHelper, Square};
-use crate::chess_move::{Move,MoveFlag};
+use crate::chess_move::{Move, MoveFlag, MoveContainer};
 use crate::piece::{PieceColor, PieceType};
 
 impl ChessBoard {
@@ -35,7 +35,7 @@ pub struct MoveGenerator;
 
 impl MoveGenerator {
     #[inline(always)]
-    fn generate_moves(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>) {
+    fn generate_moves(from: i32, mut move_mask: u64, out_moves: &mut MoveContainer) {
         while move_mask != 0 {
             let square_to = BoardHelper::bitscan_forward(move_mask);
             out_moves.push(Move::new(from, square_to, MoveFlag::None));
@@ -44,7 +44,7 @@ impl MoveGenerator {
     }
 
     #[inline(always)]
-    fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut Vec<Move>, is_quiet: bool) {
+    fn generate_moves_promotion(from: i32, mut move_mask: u64, out_moves: &mut MoveContainer, is_quiet: bool) {
         while move_mask != 0 {
             let square_to = BoardHelper::pop_lsb(&mut move_mask);
             if is_quiet {
@@ -57,7 +57,7 @@ impl MoveGenerator {
     }
 
     /// if generate_quiet == false then moves which doesn't either capture or promote to a queen won't be generated.
-    pub fn get_legal_moves(board: &ChessBoard, generate_quiet: bool) -> Vec<Move> {
+    pub fn get_legal_moves(board: &ChessBoard, generate_quiet: bool) -> MoveContainer {
         use crate::bitschess::bitboard;
         let color_idx = board.turn as usize;
         let enemy_bitboard_idx = board.turn.flipped() as usize;
@@ -73,7 +73,7 @@ impl MoveGenerator {
 
         let (pin_hv, pin_d12) = Self::get_pinned_mask(board);
         let pin_mask = pin_hv | pin_d12;
-        let mut moves = Vec::<Move>::with_capacity(32);
+        let mut moves = MoveContainer::new();
         let mut check_mask = !0u64;
 
         // King 
@@ -247,7 +247,7 @@ impl MoveGenerator {
     }
 
     #[inline(always)]
-    pub fn get_legal_moves_for_square(board: &ChessBoard, square: i32) -> Vec<Move> {
+    pub fn get_legal_moves_for_square(board: &ChessBoard, square: i32) -> MoveContainer {
         Self::get_legal_moves(board, true).into_iter().filter(|m| {
             m.get_from_idx() == square
         }).collect()

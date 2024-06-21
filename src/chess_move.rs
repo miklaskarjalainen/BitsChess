@@ -260,6 +260,105 @@ impl ReversibleMove {
     }
 }
 
+pub struct MoveContainer {
+    // Most legal moves in a chess position is 218 in this position:
+    // fen: R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - -
+    moves: [Move; 218], 
+    size: usize 
+}
+
+pub struct MoveContainerIterator<'a> {
+    container: &'a MoveContainer,
+    index: usize
+}
+
+impl<'a> Iterator for MoveContainerIterator<'a> {
+    type Item = &'a Move;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.container.len() {
+            let result = Some(&self.container.moves[self.index]);
+            self.index += 1;
+            return result;
+        }
+        None
+    }
+}
+
+pub struct MoveContainerIntoIterator {
+    container: MoveContainer,
+    index: usize
+}
+
+impl Iterator for MoveContainerIntoIterator {
+    type Item = Move;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.container.len() {
+            let result = Some(self.container.moves[self.index]);
+            self.index += 1;
+            return result;
+        }
+        None
+    }
+}
+
+impl IntoIterator for MoveContainer {
+    type Item = Move;
+    type IntoIter = MoveContainerIntoIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            container: self,
+            index: 0
+        }
+    }
+}
+
+impl FromIterator<Move> for MoveContainer {
+    fn from_iter<I: IntoIterator<Item=Move>>(iter: I) -> Self {
+        let mut c = MoveContainer::new();
+        for i in iter {
+            c.push(i);
+        }
+        c
+    }
+}
+
+impl MoveContainer {
+    #[inline(always)]
+    pub fn new() -> Self {
+        MoveContainer {
+            moves: [Move(0); 218],
+            size: 0
+        }
+    }
+        
+    #[inline(always)]
+    pub fn iter(&self) -> MoveContainerIterator {
+        MoveContainerIterator {
+            container: self,
+            index: 0
+        }
+    }
+    
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        return self.size;
+    }
+    
+    #[inline(always)]
+    pub fn push(&mut self, chess_move: Move) {
+        self.moves[self.size] = chess_move;
+        self.size += 1;
+    }
+    
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

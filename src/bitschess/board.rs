@@ -11,7 +11,7 @@ use repetition_table::RepetitionTable;
 use super::bitboard::BitBoard;
 
 use crate::board_helper::{BoardHelper, Square};
-use crate::chess_move::{Move, MoveFlag, ReversibleMove};
+use crate::chess_move::{Move, MoveFlag, ReversibleMove, MoveContainer};
 use crate::piece::{Piece, PieceType, PieceColor};
 
 /// A Chessboard is 8x8 
@@ -175,20 +175,20 @@ impl ChessBoard {
 
     #[must_use]
     #[inline(always)]
-    pub fn get_legal_moves(&self) -> Vec<Move> { 
+    pub fn get_legal_moves(&self) -> MoveContainer { 
         MoveGenerator::get_legal_moves(self, true)
     }
 
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
-    pub fn get_legal_captures(&self) -> Vec<Move> { 
+    pub fn get_legal_captures(&self) -> MoveContainer { 
         MoveGenerator::get_legal_moves(self, false)
     }
 
     #[must_use]
     #[inline(always)]
-    pub fn get_legal_moves_for_square(&self, square: i32) -> Vec<Move> { 
+    pub fn get_legal_moves_for_square(&self, square: i32) -> MoveContainer { 
         MoveGenerator::get_legal_moves_for_square(self, square)
     }
 
@@ -203,7 +203,7 @@ impl ChessBoard {
             str.push('|');
             for x in 0..=7 {
                 str.push(self.get_piece(y * CHESSBOARD_WIDTH + x).to_char());
-                for m in &moves {
+                for m in moves.iter() {
                     if m.get_to_idx() == (y*CHESSBOARD_WIDTH+x) {
                         str.pop().unwrap();
                         str.push('*');
