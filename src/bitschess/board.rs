@@ -234,6 +234,9 @@ impl ChessBoard {
         let castling_hold = self.castling_rights;
         let half_move_hold = self.half_move;
 
+        if self.en_passant != -1 {
+            self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_EN_PASSANT + (self.en_passant % 8) as usize];
+        }
         self.en_passant = -1;
         self.full_move += self.turn as u16; // white = 0, black = 1
         self.turn.flip();
@@ -253,7 +256,7 @@ impl ChessBoard {
 
                 // Save to history
                 let save_repetition = if is_in_search { self.repetitions.increment_existing_repetition(self.zobrist_hash) } else { self.repetitions.increment_repetition(self.zobrist_hash) };
-                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move, self.zobrist_hash, save_repetition);
+                let reversible = ReversibleMove::new(chess_move, captured, en_passant_hold, self.castling_rights, self.half_move, zobrist_hold, save_repetition);
                 self.move_history.push(reversible);
                 self.half_move = 0;
                 return;
@@ -261,6 +264,7 @@ impl ChessBoard {
             MoveFlag::PawnTwoUp => {
                 let en_passant_dir = if moving_piece.get_color() == PieceColor::White { 8 } else { -8 };
                 self.en_passant = from + en_passant_dir;
+                self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_EN_PASSANT + (self.en_passant % 8) as usize];
             }
             MoveFlag::Castle => {
                 match Square::from_u32(to as u32) {
@@ -373,6 +377,37 @@ impl ChessBoard {
             }
 
             _ => {}
+        }
+
+        // Disable castling rights of the opponent when their rook is captured
+        if !captured.is_none() && captured.get_piece_type() == PieceType::Rook {
+            match Square::from_u32(to as u32) {
+                Square::H1 => {
+                    if self.castling_rights[0] {
+                        self.castling_rights[0] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING];
+                    }
+                }
+                Square::A1 => {
+                    if self.castling_rights[1] {
+                        self.castling_rights[1] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+1];
+                    }
+                }
+                Square::H8 => {
+                    if self.castling_rights[2] {
+                        self.castling_rights[2] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+2];
+                    }
+                }
+                Square::A8 => {
+                    if self.castling_rights[3] {
+                        self.castling_rights[3] = false;
+                        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_CASTLING+3];
+                    };
+                }
+                _ => {}
+            }
         }
 
         // Save to history
@@ -662,6 +697,14 @@ mod tests {
     fn test_chessboard_make_move_castle_black() {
         _test_unmake_move("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "e8g8");
         _test_unmake_move("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "e8c8");
+    }
+
+    #[test]
+    fn test_chessboard_make_move_castling_rook_capture() {
+        _test_unmake_move("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "a1a8");
+        _test_unmake_move("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "h1h8");
+        _test_unmake_move("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "a8a1");
+        _test_unmake_move("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "h8h1");
     }
 
     #[test]
