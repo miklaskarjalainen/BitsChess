@@ -63,7 +63,7 @@ impl MoveGenerator {
         let enemy_bitboard_idx = board.turn.flipped() as usize;
 
         // 
-        let attack_mask = Self::get_attack_mask(board);
+        let attack_mask = Self::get_attack_mask(board, board.get_turn().flipped());
 
         let friendly_pieces = board.side_bitboards[color_idx];
         let enemy_pieces = board.side_bitboards[enemy_bitboard_idx];
@@ -368,11 +368,13 @@ impl MoveGenerator {
         
         (is_double_check, check_mask)
     }
-    
-    pub fn get_attack_mask(board: &ChessBoard) -> u64 {
+
+    /// # Description
+    /// Get the squares attacked by the `color` pieces. Friendly pieces are included!
+    pub fn get_attack_mask(board: &ChessBoard, color: PieceColor) -> u64 {
         use crate::bitschess::bitboard;
-        let king_mask = board.bitboards[board.get_turn() as usize * 6 + 5];
-        let enemy_color = board.get_turn().flipped();
+        let opposite_color = color.flipped();
+        let king_mask = board.bitboards[opposite_color as usize * 6 + 5];
         
         // erase king from blockers as well
         let all_pieces = (board.side_bitboards[0] | board.side_bitboards[1]) ^ king_mask;
@@ -380,15 +382,15 @@ impl MoveGenerator {
         let mut attacks = 0u64;
             
         {
-            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(enemy_color)];
+            let mut pawns = board.bitboards[PieceType::Pawn.get_side_index(color)];
             while pawns != 0 {
                 let pawn_square = BoardHelper::pop_lsb(&mut pawns);
-                attacks |= bitboard::PAWN_ATTACKS[enemy_color as usize][pawn_square as usize];
+                attacks |= bitboard::PAWN_ATTACKS[color as usize][pawn_square as usize];
             }
         }
 
         {
-            let mut knights = board.bitboards[PieceType::Knight.get_side_index(enemy_color)];
+            let mut knights = board.bitboards[PieceType::Knight.get_side_index(color)];
             while knights != 0 {
                 let knight_square = BoardHelper::pop_lsb(&mut knights);
                 attacks |= bitboard::KNIGHT_ATTACKS[knight_square as usize];
@@ -396,7 +398,7 @@ impl MoveGenerator {
         }
 
         {
-            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(enemy_color)] | board.bitboards[PieceType::Queen.get_side_index(enemy_color)];
+            let mut bishops = board.bitboards[PieceType::Bishop.get_side_index(color)] | board.bitboards[PieceType::Queen.get_side_index(color)];
             while bishops != 0 {
                 let bishop_square = BoardHelper::pop_lsb(&mut bishops);
                 attacks |= get_bishop_magic(bishop_square, all_pieces);
@@ -404,14 +406,14 @@ impl MoveGenerator {
         }
 
         {
-            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(enemy_color)] | board.bitboards[PieceType::Queen.get_side_index(enemy_color)];
+            let mut rooks = board.bitboards[PieceType::Rook.get_side_index(color)] | board.bitboards[PieceType::Queen.get_side_index(color)];
             while rooks != 0 {
                 let rook_square = BoardHelper::pop_lsb(&mut rooks);
                 attacks |= get_rook_magic(rook_square, all_pieces);
             }
         }
         
-        attacks |= KING_ATTACKS[board.get_king_square(enemy_color) as usize];
+        attacks |= KING_ATTACKS[board.get_king_square(color) as usize];
         attacks
     }
 

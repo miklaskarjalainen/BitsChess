@@ -60,7 +60,7 @@ fn main() {
         }
         else if args[0] == "attackmask" {
             use crate::bitschess::board::move_generation::MoveGenerator;
-            let atk = MoveGenerator::get_attack_mask(&board);
+            let atk = MoveGenerator::get_attack_mask(&board, board.get_turn());
             println!("{}", BitBoard::pretty(atk));
         }
         else if args[0] == "checkmask" {

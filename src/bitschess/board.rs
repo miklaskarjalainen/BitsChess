@@ -439,6 +439,14 @@ impl ChessBoard {
         self.is_king_in_check(self.turn) && self.get_legal_moves().is_empty()
     }
 
+    /// # Returns
+    /// A bitmask of the currently attacked squares by `color` pieces.
+    /// Hitting friendly pieces are NOT discarded.
+    #[must_use]
+    pub fn get_attacked_squares(&self, color: PieceColor) -> u64 {
+        MoveGenerator::get_attack_mask(self, color)
+    }
+
     #[must_use]
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() { return None; }
