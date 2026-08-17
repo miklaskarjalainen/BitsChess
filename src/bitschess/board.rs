@@ -506,6 +506,49 @@ impl ChessBoard {
         MoveGenerator::get_attack_mask(self, color)
     }
 
+    /// # Description
+    /// Basically just passes the turn to the other player.
+    /// This is useful for chess engines to help with alpha-beta pruning.
+    /// Use `unmake_null_move` to revert the position
+    #[inline(always)]
+    pub fn make_null_move(&mut self) {
+        self.move_history.push(ReversibleMove::new(
+            Move::new(0, 0, MoveFlag::None),
+            Piece::new(0),
+            self.en_passant,
+            self.castling_rights,
+            self.half_move,
+            self.zobrist_hash,
+            false,
+        ));
+
+        if self.en_passant != -1 {
+            self.zobrist_hash ^=
+                zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_EN_PASSANT + (self.en_passant % 8) as usize];
+        }
+
+        self.en_passant = -1;
+        self.half_move += 1;
+        self.full_move += self.turn as u16;
+        self.zobrist_hash ^= zobrist::ZOBRIST_KEYS[zobrist::ZOBRIST_TURN];
+        self.turn.flip();
+    }
+
+    #[inline(always)]
+    pub fn unmake_null_move(&mut self) {
+        if let Some(null_move) = self.move_history.pop() {
+            self.turn.flip();
+            self.zobrist_hash = null_move.zobrist_hash;
+            self.half_move = null_move.half_move;
+            self.en_passant = null_move.en_passant_square;
+            self.castling_rights = null_move.castling; // should be unnecessary
+
+            if self.turn == PieceColor::Black {
+                self.full_move -= 1;
+            }
+        }
+    }
+
     #[must_use]
     pub fn unmake_move(&mut self) -> Option<Move> {
         if self.move_history.is_empty() {
@@ -822,5 +865,98 @@ mod tests {
     #[test]
     fn test_chessboard_unmake_move_knight_promotion() {
         _test_unmake_move(TEST_PROMOTION_FEN, "f2f1n");
+    }
+
+    /* Null Move Tests */
+
+    #[test]
+    fn test_null_move_roundtrip() {
+        let mut board = ChessBoard::new();
+        board
+            .parse_fen("r3k2r/8/8/3pP3/8/8/8/R3K2R w KQkq d6 0 1")
+            .expect("valid fen");
+
+        let copy = board.clone();
+        board.make_null_move();
+        assert_ne!(board, copy);
+        board.unmake_null_move();
+
+        assert_eq!(
+            board, copy,
+            "\n\n\nexpected\n{}\n---------------------------\n got\n{}\n",
+            copy, board
+        );
+        assert_eq!(board.zobrist_hash, copy.zobrist_hash);
+    }
+
+    #[test]
+    fn test_null_move_get_legal_moves() {
+        let mut board = ChessBoard::new();
+        board
+            .parse_fen("4k3/8/8/8/8/8/4P3/4K3 w - - 0 1")
+            .expect("valid fen");
+
+        assert_eq!(board.get_legal_moves().len(), 6);
+
+        board.make_null_move();
+        assert_eq!(board.get_turn(), PieceColor::Black);
+
+        let moves = board.get_legal_moves();
+        assert_eq!(moves.len(), 5); // black king only
+        for m in moves.iter() {
+            assert!(
+                m.get_from_idx() >= 56,
+                "generated a move for the wrong side"
+            );
+        }
+    }
+
+    #[test]
+    fn test_null_move_equals_repetition_shuffle_without_repetition() {
+        let mut board = ChessBoard::new();
+        board.parse_fen(STARTPOS_FEN).expect("valid fen");
+        let start_hash = board.zobrist_hash;
+        // parse_fen records the initial position, so it starts at 1.
+        assert_eq!(board.repetitions.get_repetitions(start_hash), Some(1));
+
+        // Two null moves return to the exact same position, but never touch
+        // the repetition table.
+        let mut null_board = board.clone();
+        null_board.make_null_move();
+        null_board.make_null_move();
+        assert_eq!(null_board.zobrist_hash, start_hash);
+        assert_eq!(null_board.get_turn(), PieceColor::White);
+        assert_eq!(
+            null_board.repetitions.get_repetitions(start_hash),
+            Some(1),
+            "null moves must not record repetitions"
+        );
+
+        // Shuffling a knight back and forth (4 plies) returns to the identical
+        // position, but records it in the repetition table.
+        let mut shuffle_board = board.clone();
+        shuffle_board.make_move_uci("b1a3").expect("legal");
+        shuffle_board.make_move_uci("b8a6").expect("legal");
+        shuffle_board.make_move_uci("a3b1").expect("legal");
+        shuffle_board.make_move_uci("a6b8").expect("legal");
+
+        assert_eq!(shuffle_board.zobrist_hash, start_hash);
+        assert_eq!(shuffle_board.get_turn(), PieceColor::White);
+        assert_eq!(
+            shuffle_board.repetitions.get_repetitions(start_hash),
+            Some(2)
+        );
+
+        // Same piece placement and same legal moves; only the repetition
+        // bookkeeping differs.
+        assert_eq!(null_board.board, shuffle_board.board);
+        assert_eq!(null_board.bitboards, shuffle_board.bitboards);
+        assert_eq!(null_board.side_bitboards, shuffle_board.side_bitboards);
+        assert_eq!(null_board.castling_rights, shuffle_board.castling_rights);
+        assert_eq!(null_board.en_passant, shuffle_board.en_passant);
+
+        let null_moves: Vec<Move> = null_board.get_legal_moves().into_iter().collect();
+        let shuffle_moves: Vec<Move> = shuffle_board.get_legal_moves().into_iter().collect();
+        assert_eq!(null_moves, shuffle_moves);
     }
 }
