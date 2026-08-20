@@ -283,18 +283,35 @@ impl MoveGenerator {
                     PAWN_ATTACKS[color_idx][pawn_square as usize] & en_passant_square_mask != 0;
 
                 if en_passant_on_attack && !pawn_moved_diag_pinned {
-                    // handles this 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1
                     if BoardHelper::get_rank(pawn_square) == BoardHelper::get_rank(king_square) {
-                        let opp_rq = board.bitboards
-                            [PieceType::Rook.get_side_index(board.turn.flipped())]
-                            | board.bitboards
-                                [PieceType::Queen.get_side_index(board.turn.flipped())];
-
                         let two_pawn_mask = pawn_moved_mask | (1 << pawn_square);
                         let blockers = all_pieces ^ two_pawn_mask;
-                        let rook_attacks = get_rook_magic(king_square, blockers);
 
-                        if rook_attacks & opp_rq == 0 {
+                        // Rook or Queen case 8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3 0 1
+                        let rook_case = {
+                            let opp_rq = board.bitboards
+                                [PieceType::Rook.get_side_index(board.turn.flipped())]
+                                | board.bitboards
+                                    [PieceType::Queen.get_side_index(board.turn.flipped())];
+
+                            let rook_attacks = get_rook_magic(king_square, blockers);
+
+                            (rook_attacks & opp_rq) == 0
+                        };
+
+                        // Bishop or Queen case 8/8/3b3p/7P/2Ppkp2/p7/4K3/1B6 b - c3 0 82
+                        let bishop_case = {
+                            let opp_bq = board.bitboards
+                                [PieceType::Bishop.get_side_index(board.turn.flipped())]
+                                | board.bitboards
+                                    [PieceType::Queen.get_side_index(board.turn.flipped())];
+
+                            let bishop_attacks = get_bishop_magic(king_square, blockers);
+
+                            (bishop_attacks & opp_bq) == 0
+                        };
+
+                        if rook_case && bishop_case {
                             moves.push(Move::new(
                                 pawn_square,
                                 board.en_passant,
@@ -565,6 +582,17 @@ mod tests {
         board.make_move_uci("c5d6").expect(
             "en passant captures pinned piece and also resolves the pin so should be allowed",
         )
+    }
+
+    #[test]
+    fn test_chess_board_move_generation_en_passant_with_pawn_that_could_block_check() {
+        // The en passant in this position is not valid move because it doesn't block the move.
+        // Only going up by 1 blocks it properly.
+        let mut board = ChessBoard::new();
+        board
+            .parse_fen("8/8/3b3p/7P/2Ppkp2/p7/4K3/1B6 b - c3 0 82")
+            .expect("valid fen");
+        assert_eq!(board.get_legal_moves().len(), 2);
     }
 
     #[test]
